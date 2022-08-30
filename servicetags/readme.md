@@ -1,4 +1,4 @@
-# Find service tag(s) for an IP
+# Find service tags for an IP
 
 There are to scripts, that can be used.
 
