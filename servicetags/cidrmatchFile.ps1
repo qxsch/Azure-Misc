@@ -12,10 +12,72 @@ class IP {
 
     IP([string]$ip) {
         $this.ip = $ip.Trim()
-        $this.ipbitmask = [IP]::GetIPBitMask($this.ip)
+        if($this.ip.Contains(".")) {
+            $this.ipbitmask = [IP]::GetIP32BitMask($this.ip)    
+        }
+        elseif($this.ip.Contains(":")) {
+            $this.ip = $this.ip.ToUpper()
+            $this.ipbitmask = [IP]::GetIP128BitMask($this.ip)    
+        }
+        else {
+            throw "Invalid IP Address: $ip"
+        }
+
     }
 
-    [bool[]] hidden static GetIPBitMask([string]$ip) {
+    [bool[]] hidden static GetIP128BitMask([string]$ip) {
+        $bm = new-object bool[] 128
+
+        for($i = 0; $i -lt 128; $i++) {
+            $bm[$i] = $false
+        }
+
+        $ipa = $ip.Trim().Split(':')
+        if($ipa.Count -ne 8) {
+            $ipn = ""
+            for($i = 0; $i -lt $ipa.Count; $i++) {
+                if($ipa[$i] -ne "") {
+                    $ipn += ( $ipa[$i] + ":" )
+                }
+                else {
+                    for($ii = 0 ; $ii -lt (9 - $ipa.Count); $ii++) {
+                        $ipn += "0:"
+                    }
+                }
+            }
+            $ipn = $ipn.Substring(0, $ipn.Length - 1)
+            $ipa = $ipn.Trim().Split(':')
+            if($ipa.Count -ne 8) {
+                throw "Invalid IP Address: $ip"
+            }
+        }
+
+        for($i = 0; $i -lt 8; $i++) {
+            if($ipa[$i] -eq "") {
+                continue
+            }
+            $seg =  [Convert]::ToInt32($ipa[$i], 16)
+
+            for($ii = 0; $seg -gt 0; $ii++) {
+                $bm[($i * 16) + 16 - $ii - 1] = [bool]($seg % 2)
+                $seg = [Math]::Floor($seg / 2)
+            }
+
+            $s = ""
+            for($ii = 0; $ii -lt 16; $ii++) {
+                if($bm[($i * 16) + $ii]) {
+                    $s += "1"
+                }
+                else {
+                    $s += "0"
+                }
+            }
+        }
+
+        return $bm
+    }
+
+    [bool[]] hidden static GetIP32BitMask([string]$ip) {
         $bm = new-object bool[] 32
 
         for($i = 0; $i -lt 32; $i++) {
@@ -44,8 +106,6 @@ class IP {
                     $s += "0"
                 }
             }
-            $seg = [int]$ipa[$i]
-            #Write-Host "SEG: $seg = $s"
         }
         return $bm
     }
@@ -59,23 +119,59 @@ class IP {
     }
 
     [string] GetBitMaskString() {
-        $s = ""
-        for($i = 0; $i -lt 32; $i++) {
-            if(($i % 8) -eq 0  -and  $i -gt 0) {
-                $s += "."
+        if($this.ipbitmask.Count -eq 32) {
+            $s = ""
+            for($i = 0; $i -lt 32; $i++) {
+                if(($i % 8) -eq 0  -and  $i -gt 0) {
+                    $s += "."
+                }
+                if($this.ipbitmask[$i]) {
+                    $s += "1"
+                }
+                else {
+                    $s += "0"
+                }
             }
-            if($this.ipbitmask[$i]) {
-                $s += "1"
-            }
-            else {
-                $s += "0"
-            }
+            return $s
         }
-        return $s;
+        elseif($this.ipbitmask.Count -eq 128) {
+            $s = ""
+            for($i = 0; $i -lt 128; $i++) {
+                if(($i % 16) -eq 0  -and  $i -gt 0) {
+                    $s += ":"
+                }
+                if($this.ipbitmask[$i]) {
+                    $s += "1"
+                }
+                else {
+                    $s += "0"
+                }
+            }
+            return $s
+        }
+        else {
+            return ""
+        }
+    }
+
+    [bool] IsIPv4() {
+        return $this.ipbitmask.Count -eq 32
+    }
+
+    [bool] IsIPv6() {
+        return $this.ipbitmask.Count -eq 128
+    }
+
+    [bool] BelongsToSubnet([string]$subnet) {
+        return ([Subnet]::new($subnet)).ContainsIP($this)
+    }
+
+    [bool] BelongsToSubnet([Subnet]$subnet) {
+        return $subnet.ContainsIP($this)
     }
 
     [string] ToString() {
-        return ("IP " + $this.ip + " (" + $this.GetBitMaskString() + ")")
+        return ( "" + $this.ip )
     }
 }
 
@@ -83,26 +179,37 @@ class IP {
 class Subnet {
     [IP] hidden $ip
     [IP] hidden $mask
+    [int] hidden $cidr
 
     Subnet([string]$subnet) {
         $parts = $subnet -split "/"
         if($parts.Count -ne 2) {
-            throw "Invalid subnet"
+            throw "Invalid subnet: $subnet"
         }
+        $parts[0] = $parts[0].Trim()
+        $parts[1] = $parts[1].Trim()
         $this.ip = [IP]::new($parts[0])
 
-        if($parts[1] -match '\d+' ) {
-            $this.mask = [Subnet]::GetMaskIPFromCIDR($parts[1])
+        if($parts[1] -match '^\d+$' ) {
+            $this.cidr = ([int]$parts[1])
+            $this.mask = [Subnet]::GetMaskIPFromCIDR($parts[1], $this.ip.GetBitMask().Count)
         }
         else {
+            $this.cidr = -1
             $this.mask = [IP]::new($parts[1])
+        }
+        if($this.ip.IsIPv4() -and (-not $this.mask.IsIPv4())) {
+            throw "Invalid subnet: $subnet"
+        }
+        if($this.ip.IsIPv6() -and (-not $this.mask.IsIPv6())) {
+            throw "Invalid subnet: $subnet"
         }
     }
 
-    [IP] hidden static  GetMaskIPFromCIDR($int) {
-        $bm = new-object bool[] 32
+    [IP] hidden static  GetMaskIPFromCIDR([int]$int, [int]$len) {
+        $bm = new-object bool[] $len
 
-        for($i = 0; $i -lt 32; $i++) {
+        for($i = 0; $i -lt $len; $i++) {
             $bm[$i] = $false
         }
 
@@ -114,30 +221,71 @@ class Subnet {
     }
 
     [string] hidden static GetIPFromBitmask([bool[]] $bm) {
-        $a=@()
-        for($i = 0; $i -lt 4; $i++) {
-            $d = 0;
-            for($ii = 0; $ii -lt 8; $ii++) {
-                if($bm[($i*8) + $ii]) {
-                    $d += [Math]::pow(2, 8 - $ii - 1)
+        if($bm.Count -eq 32) {
+            $a=@()
+            for($i = 0; $i -lt 4; $i++) {
+                $d = 0;
+                for($ii = 0; $ii -lt 8; $ii++) {
+                    if($bm[($i*8) + $ii]) {
+                        $d += [Math]::pow(2, 8 - $ii - 1)
+                    }
+                }
+                $a += $d
+            }
+            return ($a -join ".")
+        }
+        elseif($bm.Count -eq 128) {
+            $s = ""
+            for($i = 0; $i -lt 32; $i++) {
+                if(($i % 4) -eq 0  -and  $i -gt 0) {
+                    $s+=":"
+                }
+
+                $d = 0
+                for($ii = 0; $ii -lt 4 ; $ii++) {
+                    if($bm[($i * 4) + $ii]) {
+                        $d += [Math]::pow(2, 4 - $ii -1)
+                    }
+                }
+                $s += ([int]$d).ToString("X")
+            }
+            # removed unwanted zeros
+            $a = $s -split ":"
+            for($i=0 ; $i -lt 8; $i++) {
+                while($a[$i][0] -eq "0"  -and  $a[$i] -ne "0") {
+                    $a[$i] = $a[$i].Substring(1)
                 }
             }
-            $a += $d
+            return ($a -join ":")
         }
-        return ($a -join ".")
+        else {
+            return ""
+        }
     }
 
     [string] ToString() {
+        if($this.cidr -ne -1) {
+            return ( $this.ip.GetIP() + " / " + $this.cidr)
+        }
         return ( $this.ip.GetIP() + " / " + $this.mask.GetIP())
     }
 
-    [IP] GetFirstIP() {
-        $bm = new-object bool[] 32
+    [IP] GetSubnetIP() {
+        return $this.ip
+    }
 
+    [IP] GetSubnetMask() {
+        return $this.mask
+    }
+
+    [IP] GetFirstIP() {
         $ipbm = $this.ip.GetBitMask()
         $maskbm = $this.mask.GetBitMask()
 
-        for($i = 0; $i -lt 32; $i++) {
+        $len = $ipbm.Count
+        $bm = new-object bool[] $len
+
+        for($i = 0; $i -lt $len; $i++) {
             if($maskbm[$i]) {
                 $bm[$i] = $ipbm[$i]
             }
@@ -150,12 +298,13 @@ class Subnet {
     }
 
     [IP] GetLastIP() {
-        $bm = new-object bool[] 32
-
         $ipbm = $this.ip.GetBitMask()
         $maskbm = $this.mask.GetBitMask()
 
-        for($i = 0; $i -lt 32; $i++) {
+        $len = $ipbm.Count
+        $bm = new-object bool[] $len
+
+        for($i = 0; $i -lt $len; $i++) {
             if($maskbm[$i]) {
                 $bm[$i] = $ipbm[$i]
             }
@@ -176,7 +325,14 @@ class Subnet {
         $ipbm = $this.ip.GetBitMask()
         $maskbm = $this.mask.GetBitMask()
 
-        for($i = 0; $i -lt 32; $i++) {
+        $len = $ipbm.Count
+
+        # different ip versions? return false
+        if($bm.Count -ne $len) {
+            return $false
+        }
+
+        for($i = 0; $i -lt $len; $i++) {
             if($maskbm[$i]) {
                 if($bm[$i] -ne $ipbm[$i]) {
                     return $false
@@ -188,11 +344,20 @@ class Subnet {
         return $true
     }
 
+    [bool] IsIPv4() {
+        return $this.ip.GetBitMask().Count -eq 32
+    }
+
+    [bool] IsIPv6() {
+        return $this.ip.GetBitMask().Count -eq 128
+    }
 }
 
 
 $ipToCheck = [IP]::new($ip)
 
+$isipv4 = $ipToCheck.IsIPv4()
+$isipv6 = $ipToCheck.IsIPv6()
 
 $json = Get-Content $jsonFile | ConvertFrom-Json  -Depth 20
 
@@ -203,6 +368,12 @@ if($json.values -and $json.values -is [array]) {
         }
         foreach($p in $v.properties.addressPrefixes) {
             try {
+                if($isipv4 -and $p.Contains(":")) {
+                    continue
+                }
+                if($isipv6 -and $p.Contains(".")) {
+                    continue
+                }
                 $subnet = [Subnet]::new($p)
                 if($subnet.ContainsIP($ipToCheck)) {
                     $s = "$p"
