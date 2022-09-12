@@ -25,6 +25,40 @@ class IP {
 
     }
 
+    [string[]] hidden static GetIPv6Segments([string]$ip) {
+        $ipa = $ip.Trim().Split(':')
+        if($ipa.Count -ne 8) {
+            $ipa = $ip.Trim().Split('::')
+            if($ipa.Count -ne 2) {
+                throw "Invalid IP Address: $ip"
+            }
+            
+            $ipa1 = $ipa[0].Split(':')
+            $ipa2 = $ipa[1].Split(':')
+            $ipa = @()
+            foreach($i in $ipa1) {
+                if($i -eq "") {
+                    $i = "0"
+                }
+                $ipa += $i
+            }
+            for($i = 0; $i -lt (8 - ($ipa1.Count + $ipa2.Count)); $i++) {
+                $ipa += "0"
+            }
+            foreach($i in $ipa2) {
+                if($i -eq "") {
+                    $i = "0"
+                }
+                $ipa += $i
+            }
+
+            if($ipa.Count -ne 8) {
+                throw "Invalid IP Address: $ip"
+            }
+        }
+        return $ipa
+    }
+
     [bool[]] hidden static GetIP128BitMask([string]$ip) {
         $bm = new-object bool[] 128
 
@@ -32,25 +66,7 @@ class IP {
             $bm[$i] = $false
         }
 
-        $ipa = $ip.Trim().Split(':')
-        if($ipa.Count -ne 8) {
-            $ipn = ""
-            for($i = 0; $i -lt $ipa.Count; $i++) {
-                if($ipa[$i] -ne "") {
-                    $ipn += ( $ipa[$i] + ":" )
-                }
-                else {
-                    for($ii = 0 ; $ii -lt (9 - $ipa.Count); $ii++) {
-                        $ipn += "0:"
-                    }
-                }
-            }
-            $ipn = $ipn.Substring(0, $ipn.Length - 1)
-            $ipa = $ipn.Trim().Split(':')
-            if($ipa.Count -ne 8) {
-                throw "Invalid IP Address: $ip"
-            }
-        }
+        $ipa = [IP]::GetIPv6Segments($ip)
 
         for($i = 0; $i -lt 8; $i++) {
             if($ipa[$i] -eq "") {
@@ -172,6 +188,31 @@ class IP {
 
     [string] ToString() {
         return ( "" + $this.ip )
+    }
+
+    [IP] ConvertToIPv6() {
+        if($this.IsIPv6()) {
+            return $this
+        }
+        
+        if($this.IsIPv4()) {
+            $ipstr = "::FFFF"
+            $i = 0
+            foreach($p in $this.ip.Split(".")) {
+                if(($i % 2) -eq 0) {
+                    $ipstr += ":"
+                }
+                $s = ([int]$p).ToString("X")
+                if($s.Length -lt 2) {
+                    $s = "0$s"
+                }
+                $ipstr += "$s"
+                $i++
+            }
+            return [IP]::new($ipstr.ToUpper())
+        }
+
+        throw "IP cannot be converted to version 6"
     }
 }
 
@@ -350,6 +391,32 @@ class Subnet {
 
     [bool] IsIPv6() {
         return $this.ip.GetBitMask().Count -eq 128
+    }
+
+    [Subnet] ConvertToIPv6() {
+        if($this.IsIPv6()) {
+            return $this
+        }
+        
+        if($this.IsIPv4()) {
+            if($this.cidr -ne -1) {
+                return [Subnet]::new($this.ip.ConvertToIPv6().GetIP() + "/" + ($this.cidr + 96))
+            }
+
+            $bm = new-object bool[] 128
+            for($i = 0; $i -lt 96; $i++) {
+                $bm[$i] = $true
+            }
+    
+            $bmm = $this.mask.GetBitMask()
+            for($i = 0; $i -lt 32; $i++) {
+                $bm[$i + 96] = $bmm[$i]
+            }
+
+            return [Subnet]::new($this.ip.ConvertToIPv6().GetIP() + "/" + [Subnet]::GetIPFromBitmask($bm))
+        }
+
+        throw "IP cannot be converted to version 6" 
     }
 }
 
