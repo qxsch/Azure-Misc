@@ -19,5 +19,6 @@ This way you can query faster and also from historical files.
 
 The syntax looks like this:
 ```pwsh
+# you can use .\downloadServiceTagsFile.ps1 to download the file
 .\cidrmatchFile.ps1 -ip "51.107.0.91" -jsonFile ".\ServiceTags_Public_20220822.json"
 ```
