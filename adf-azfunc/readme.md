@@ -5,7 +5,8 @@ You want to replace some characters in a smaller files (f.e. text file) within a
 # Setup
 
  1. Deploy a Storage Account 
-    1. Create a blob container called ``mydata`` 
+    1. Create a blob container called ``mydata``
+    1. Upload the file called ``myfile.txt`` to the container ``mydata``
  1. Deploy an Azure Function with Python
     1. Enable system-assigned managed identity on the azure function
     1. Go to configuration
