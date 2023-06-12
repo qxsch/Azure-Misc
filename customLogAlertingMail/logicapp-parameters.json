@@ -1,0 +1,21 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "actiongroup_name": {
+            "value": "myEvHandlerGroup"
+        },
+        "keyvault_name": {
+            "value": ""
+        },
+        "logicapp_name": {
+            "value": ""
+        },
+        "logicapp_connection_keyvault": {
+            "value": "keyvault"
+        },
+        "logicapp_connection_office365": {
+            "value": "office365"
+        }
+    }
+}
