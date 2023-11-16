@@ -1,0 +1,344 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "workspaceName": {
+            "type": "string"
+        },
+        "workspaceSlaTableRetentionINDays": {
+            "type": "int",
+            "minValue": 30,
+            "maxValue": 730
+        },
+        "dataCollectionRuleName": {
+            "type": "string"
+        },
+        "dataCollectionEndpointName": {
+            "type": "string"
+        },
+        "functionAppName": {
+            "type": "string"
+        },
+        "storageAccountName": {
+            "type": "string"
+        },
+        "hostingPlanName": {
+            "type": "string"
+        },
+        "hostingPlanSku": {
+            "type": "string"
+        },
+        "hostingPlanSkuCode": {
+            "type": "string"
+        },
+        "hostingPlanWorkerSize": {
+            "type": "string"
+        },
+        "hostingPlanWorkerSizeId": {
+            "type": "string"
+        },
+        "hostingPlanNumberOfWorkers": {
+            "type": "string"
+        },
+        "hostingPlanZoneRedundant": {
+            "type": "bool"
+        },
+        "deplyomentFeatures": {
+            "type": "string",
+            "defaultValue": "full",
+            "allowedValues": [
+              "full",
+              "full-without-role-assignment",
+              "just-log-pipeline"
+            ]
+          }
+    },
+    "variables": {},
+    "resources": [
+        {
+            "condition": "[or(equals(parameters('deplyomentFeatures'), 'full'), equals(parameters('deplyomentFeatures'), 'full-without-role-assignment'))]",
+            "apiVersion": "2022-09-01",
+            "name": "[parameters('functionAppName')]",
+            "type": "Microsoft.Web/sites",
+            "kind": "functionapp,linux",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/serverfarms', parameters('hostingPlanName'))]",
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]",
+                "[resourceId('Microsoft.Insights/dataCollectionRules', parameters('dataCollectionRuleName'))]",
+                "[resourceId('Microsoft.Insights/dataCollectionEndpoints', parameters('dataCollectionEndpointName'))]",
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]",
+                "[resourceId('Microsoft.OperationalInsights/workspaces/tables', parameters('workspaceName'), 'sla_data_CL')]"
+            ],
+            "identity": {
+                "type": "SystemAssigned"
+            },
+            "properties": {
+                "name": "[parameters('functionAppName')]",
+                "siteConfig": {
+                    "appSettings": [
+                        {
+                            "name": "FUNCTIONS_EXTENSION_VERSION",
+                            "value": "~4"
+                        },
+                        {
+                            "name": "FUNCTIONS_WORKER_RUNTIME",
+                            "value": "powershell"
+                        },
+                        {
+                            "name": "SCM_DO_BUILD_DURING_DEPLOYMENT",
+                            "value": "true"
+                        },
+                        {
+                            "name": "AzureWebJobsStorage",
+                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=',parameters('storageAccountName'),';AccountKey=',listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), '2019-06-01').keys[0].value,';EndpointSuffix=','core.windows.net')]"
+                        },
+                        {
+                            "name": "DcrImmutableId",
+                            "value": "[reference(resourceId('Microsoft.Insights/dataCollectionRules', parameters('dataCollectionRuleName')), '2022-06-01', 'Full').properties.immutableId]"
+                        },
+                        {
+                            "name": "DceURI",
+                            "value": "[reference(resourceId('Microsoft.Insights/dataCollectionEndpoints', parameters('dataCollectionEndpointName')), '2022-06-01', 'Full').properties.logsIngestion.endpoint]"
+                        }
+                    ],
+                    "cors": {
+                        "allowedOrigins": [
+                            "https://portal.azure.com"
+                        ]
+                    },
+                    "use32BitWorkerProcess": false,
+                    "ftpsState": "Disabled",
+                    "linuxFxVersion": "PowerShell|7.2",
+                    "alwaysOn": true
+                },
+                "clientAffinityEnabled": false,
+                "virtualNetworkSubnetId": null,
+                "publicNetworkAccess": "Enabled",
+                "httpsOnly": true,
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('hostingPlanName'))]",
+                "keyVaultReferenceIdentity": "SystemAssigned"
+            }
+        },
+        {
+            "condition": "[or(equals(parameters('deplyomentFeatures'), 'full'), equals(parameters('deplyomentFeatures'), 'full-without-role-assignment'))]",
+            "apiVersion": "2022-09-01",
+            "name": "[parameters('hostingPlanName')]",
+            "type": "Microsoft.Web/serverfarms",
+            "location": "[resourceGroup().location]",
+            "kind": "linux",
+            "tags": {},
+            "dependsOn": [],
+            "properties": {
+                "name": "[parameters('hostingPlanName')]",
+                "targetWorkerCount": "[parameters('hostingPlanWorkerSize')]",
+                "targetWorkerSizeId": "[parameters('hostingPlanWorkerSizeId')]",
+                "numberOfWorkers": "[parameters('hostingPlanNumberOfWorkers')]",
+                "reserved": true,
+                "zoneRedundant": "[parameters('hostingPlanZoneRedundant')]"
+            },
+            "sku": {
+                "tier": "[parameters('hostingPlanSku')]",
+                "name": "[parameters('hostingPlanSkuCode')]"
+            }
+        },
+        {
+            "condition": "[or(equals(parameters('deplyomentFeatures'), 'full'), equals(parameters('deplyomentFeatures'), 'full-without-role-assignment'))]",
+            "apiVersion": "2022-05-01",
+            "type": "Microsoft.Storage/storageAccounts",
+            "name": "[parameters('storageAccountName')]",
+            "location": "[resourceGroup().location]",
+            "tags": {},
+            "sku": {
+                "name": "Standard_LRS"
+            },
+            "properties": {
+                "supportsHttpsTrafficOnly": true,
+                "minimumTlsVersion": "TLS1_2",
+                "defaultToOAuthAuthentication": true
+            }
+        },
+        {
+            "type": "Microsoft.OperationalInsights/workspaces",
+            "apiVersion": "2021-12-01-preview",
+            "name": "[parameters('workspaceName')]",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "sku": {
+                    "name": "pergb2018"
+                },
+                "retentionInDays": 30,
+                "features": {
+                    "enableLogAccessUsingOnlyResourcePermissions": true
+                },
+                "workspaceCapping": {
+                    "dailyQuotaGb": -1
+                },
+                "publicNetworkAccessForIngestion": "Enabled",
+                "publicNetworkAccessForQuery": "Enabled"
+            }
+        },
+        {
+            "type": "Microsoft.OperationalInsights/workspaces/tables",
+            "apiVersion": "2021-12-01-preview",
+            "name": "[concat(parameters('workspaceName'), '/sla_data_CL')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]"
+            ],
+            "properties": {
+                "totalRetentionInDays": "[parameters('workspaceSlaTableRetentionINDays')]",
+                "plan": "Analytics",
+                "schema": {
+                    "name": "sla_data_CL",
+                    "columns": [
+                        {
+                            "name": "TimeGenerated",
+                            "type": "datetime"
+                        },
+                        {
+                            "name": "SubscriptionId",
+                            "type": "string"
+                        },
+                        {
+                            "name": "ResourceId",
+                            "type": "string"
+                        },
+                        {
+                            "name": "ResourceType",
+                            "type": "string"
+                        },
+                        {
+                            "name": "UptimePercentage",
+                            "type": "real"
+                        }
+                    ]
+                },
+                "retentionInDays": "[parameters('workspaceSlaTableRetentionINDays')]"
+            }
+        },
+        {
+            "type": "Microsoft.Insights/dataCollectionEndpoints",
+            "apiVersion": "2022-06-01",
+            "name": "[parameters('dataCollectionEndpointName')]",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "configurationAccess": {},
+                "logsIngestion": {},
+                "networkAcls": {
+                    "publicNetworkAccess": "Enabled"
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Insights/dataCollectionRules",
+            "apiVersion": "2022-06-01",
+            "name": "[parameters('dataCollectionRuleName')]",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Insights/dataCollectionEndpoints', parameters('dataCollectionEndpointName'))]",
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]",
+                "[resourceId('Microsoft.OperationalInsights/workspaces/tables', parameters('workspaceName'), 'sla_data_CL')]"
+            ],
+            "properties": {
+                "dataCollectionEndpointId": "[resourceId('Microsoft.Insights/dataCollectionEndpoints', parameters('dataCollectionEndpointName'))]",
+                "streamDeclarations": {
+                    "Custom-sla_data_CL": {
+                        "columns": [
+                            {
+                                "name": "TimeGenerated",
+                                "type": "datetime"
+                            },
+                            {
+                                "name": "SubscriptionId",
+                                "type": "string"
+                            },
+                            {
+                                "name": "ResourceId",
+                                "type": "string"
+                            },
+                            {
+                                "name": "ResourceType",
+                                "type": "string"
+                            },
+                            {
+                                "name": "UptimePercentage",
+                                "type": "real"
+                            }
+                        ]
+                    }
+                },
+                "dataSources": {},
+                "destinations": {
+                    "logAnalytics": [
+                        {
+                            "workspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]",
+                            "name": "9d20915254e649b2af09664303c5a5ff"
+                        }
+                    ]
+                },
+                "dataFlows": [
+                    {
+                        "streams": [
+                            "Custom-sla_data_CL"
+                        ],
+                        "destinations": [
+                            "9d20915254e649b2af09664303c5a5ff"
+                        ],
+                        "transformKql": "source | extend TimeGenerated = now()",
+                        "outputStream": "Custom-sla_data_CL"
+                    }
+                ]
+            }
+        },
+        {
+            "type": "microsoft.insights/workbooks",
+            "apiVersion": "2023-06-01",
+            "name": "[guid(resourceGroup().id, 'SLA Reporting Workbook')]",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]",
+                "[resourceId('Microsoft.OperationalInsights/workspaces/tables', parameters('workspaceName'), 'sla_data_CL')]"
+            ],
+            "tags": {
+                "hidden-title": "SLA Reporting Workbook"
+            },
+            "kind": "shared",
+            "properties": {
+                "displayName": "SLA Reporting Workbook",
+                "version": "Notebook/1.0",
+                "category": "workbook",
+                "sourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]",
+                "serializedData": "[concat('{\"version\":\"Notebook/1.0\",\"items\":[{\"type\":1,\"content\":{\"json\":\"## SLA Reporting\\n---\\n\\nThis is the SLA Report.\"},\"name\":\"text - 2\"},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"sla_data_CL\\n| summarize AvgUptimePercent = (avg(UptimePercentage)*100) by ResourceType\\n\",\"size\":0,\"timeContext\":{\"durationMs\":86400000},\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\",\"visualization\":\"categoricalbar\",\"chartSettings\":{\"xAxis\":\"ResourceType\",\"group\":\"ResourceType\",\"createOtherGroup\":0,\"showLegend\":true,\"ySettings\":{\"min\":0,\"max\":100}}},\"name\":\"SLA-Query\"},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"sla_data_CL\\r\\n| summarize AvgUptimePercent = (avg(UptimePercentage)*100) by ResourceType\",\"size\":0,\"timeContext\":{\"durationMs\":86400000},\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\",\"visualization\":\"tiles\",\"tileSettings\":{\"showBorder\":false,\"titleContent\":{\"columnMatch\":\"ResourceType\",\"formatter\":1},\"leftContent\":{\"columnMatch\":\"AvgUptimePercent\",\"formatter\":12,\"formatOptions\":{\"palette\":\"auto\"},\"numberFormat\":{\"unit\":17,\"options\":{\"maximumSignificantDigits\":3,\"maximumFractionDigits\":2}}}},\"mapSettings\":{\"locInfo\":\"LatLong\",\"sizeSettings\":\"UptimePercentage\",\"sizeAggregation\":\"Sum\",\"legendMetric\":\"UptimePercentage\",\"legendAggregation\":\"Sum\",\"itemColorSettings\":{\"type\":\"heatmap\",\"colorAggregation\":\"Sum\",\"nodeColorField\":\"UptimePercentage\",\"heatmapPalette\":\"greenRed\"}}},\"name\":\"query - 2\",\"styleSettings\":{\"showBorder\":true}}],\"isLocked\":false,\"fallbackResourceIds\":[\"', resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName')), '\"]}')]"
+            }
+        },
+        {
+            "condition": "[equals(parameters('deplyomentFeatures'), 'full')]",
+            "type": "Microsoft.Authorization/roleAssignments",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('functionAppName'))]"
+            ],
+            "apiVersion": "2022-04-01",
+            "name": "[guid(resourceGroup().id, '3913510d-42f4-4e42-8a64-420c390055eb', parameters('functionAppName'))]",
+            "properties": {
+                "roleDefinitionId": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', '3913510d-42f4-4e42-8a64-420c390055eb')]",
+                "principalId": "[reference(resourceId('Microsoft.Web/sites', parameters('functionAppName')), '2019-08-01', 'Full').identity.principalId]"
+            }
+        }
+
+    ],
+    "outputs": {
+        "principalId": {
+            "condition": "[or(equals(parameters('deplyomentFeatures'), 'full'), equals(parameters('deplyomentFeatures'), 'full-without-role-assignment'))]",
+            "type": "string",
+            "value": "[reference(resourceId('Microsoft.Web/sites', parameters('functionAppName')), '2019-08-01', 'Full').identity.principalId]"
+        },
+        "DcrImmutableId": {
+            "type": "string",
+            "value": "[reference(resourceId('Microsoft.Insights/dataCollectionRules', parameters('dataCollectionRuleName')), '2022-06-01', 'Full').properties.immutableId]"
+        },
+        "DceURI": {
+            "type": "string",
+            "value": "[reference(resourceId('Microsoft.Insights/dataCollectionEndpoints', parameters('dataCollectionEndpointName')), '2022-06-01', 'Full').properties.logsIngestion.endpoint]"
+        }
+    }
+}

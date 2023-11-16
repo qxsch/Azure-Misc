@@ -1,0 +1,43 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- blubb123
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+- script: echo Hello, world!
+  displayName: 'Run a one-line script'
+
+- task: AzureResourceManagerTemplateDeployment@3
+  inputs:
+    deploymentScope: 'Resource Group'
+    azureResourceManagerConnection: 'azure-experiments-ado'
+    subscriptionId: 'd084fa4e-946e-4af3-80fe-b611eac2746b'
+    action: 'Create Or Update Resource Group'
+    resourceGroupName: 'mynewrg'
+    location: 'East US'
+    templateLocation: 'Linked artifact'
+    csmFile: 'tmpls/template.json'
+    csmParametersFile: 'tmpls/parameters.json'
+    deploymentMode: 'Incremental'
+    deploymentName: 'sladeployment'
+
+- task: ArchiveFiles@2
+  inputs:
+    rootFolderOrFile: 'functionapp/'
+    includeRootFolder: false
+    archiveType: 'zip'
+    archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
+    replaceExistingArchive: true
+- task: AzureFunctionApp@2
+  inputs:
+    connectedServiceNameARM: 'azure-experiments-ado'
+    appType: 'functionAppLinux'
+    appName: 'sadnj23njsafg'
+    package: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
+    deploymentMethod: 'zipDeploy'

@@ -1,0 +1,21 @@
+sla_data_CL
+| summarize arg_max(TimeGenerated, *) by ResourceId
+| summarize count() by ResourceType, UptimePercentage
+
+
+
+
+# all SLA
+sla_data_CL
+| summarize AvgUptimePercent = (avg(UptimePercentage)*100) by ResourceType
+
+
+# SLA filter by subscription
+sla_data_CL
+| where SubscriptionId == 'd084fa4e-946e-4af3-80fe-b611eac2746b'
+| summarize AvgUptimePercent = (avg(UptimePercentage)*100) by ResourceType
+
+# SLA filter by resource group
+sla_data_CL
+| where ResourceId startswith "/subscriptions/d084fa4e-946e-4af3-80fe-b611eac2746b/resourceGroups/test/"
+| summarize AvgUptimePercent = (avg(UptimePercentage)*100) by ResourceType

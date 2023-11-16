@@ -1,0 +1,45 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "workspaceName": {
+            "value": "sadnj23njsafglaw"
+        },
+        "workspaceSlaTableRetentionINDays": {
+            "value": 30
+        },
+        "dataCollectionRuleName": {
+            "value": "sadnj23njsafgrule"
+        },
+        "dataCollectionEndpointName": {
+            "value": "sadnj23njsafgep"
+        },
+        "functionAppName": {
+            "value": "sadnj23njsafg"
+        },
+        "storageAccountName": {
+            "value": "sadnj23njsafg"
+        },
+        "hostingPlanName": {
+            "value": "sadnj23njsafgplan"
+        },
+        "hostingPlanSku": {
+            "value": "Premium0V3"
+        },
+        "hostingPlanSkuCode": {
+            "value": "P0V3"
+        },
+        "hostingPlanNumberOfWorkers": {
+            "value": "1"
+        },
+        "hostingPlanWorkerSize": {
+            "value": "18"
+        },
+        "hostingPlanWorkerSizeId": {
+            "value": "18"
+        },
+        "hostingPlanZoneRedundant": {
+            "value": false
+        }
+    }
+}
