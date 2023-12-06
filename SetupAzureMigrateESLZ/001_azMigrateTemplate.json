@@ -1,0 +1,152 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "migrateProjectName": {
+            "type": "string",
+            "maxLength": 13,
+            "metadata": {
+                "description": "Specifies a name for creating the migrate project."
+            }
+        },
+        "subnetResourceId": {
+            "type": "string",
+            "metadata": {
+                "description": "Specifies the resource id to the subnet, where pe should be deployed."
+            }
+        },
+        "subnetLocation": {
+            "type": "string",
+            "metadata": {
+                "description": "Specifies the location of the subnet, where pe should be deployed."
+            }
+        },
+        "location": {
+            "type": "string",
+            "allowedValues": [
+                "centralus",
+                "eastasia",
+                "northeurope",
+                "westeurope",
+                "westus2",
+                "australiasoutheast",
+                "uksouth",
+                "ukwest",
+                "canadacentral",
+                "centralindia",
+                "southindia",
+                "japaneast",
+                "japanwest",
+                "brazilsouth",
+                "koreasouth",
+                "koreacentral",
+                "francecentral",
+                "switzerlandnorth",
+                "australiaeast",
+                "southeastasia",
+                "centraluseuap",
+                "eastus2euap",
+                "canadaeast",
+                "southcentralus",
+                "usgovvirginia",
+                "usgovarizona"
+            ],
+            "metadata": {
+                "description": "Specifies the location for all resources."
+            }
+        }
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Migrate/MigrateProjects",
+            "apiVersion": "2020-05-01",
+            "name": "[parameters('migrateProjectName')]",
+            "location": "[parameters('location')]",
+            "tags": {
+                "Migrate Project": "[parameters('migrateProjectName')]"
+            },
+            "identity": {
+                "type": "SystemAssigned"
+            },
+            "properties": {
+                "publicNetworkAccess": "Disabled"
+            }
+        },
+        {
+            "type": "Microsoft.Migrate/MigrateProjects/Solutions",
+            "apiVersion": "2020-05-01",
+            "name": "[concat(parameters('migrateProjectName'), '/Servers-Assessment-ServerAssessment')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Migrate/MigrateProjects', parameters('migrateProjectName'))]"
+            ],
+            "properties": {
+                "tool": "ServerAssessment",
+                "purpose": "Assessment",
+                "goal": "Servers",
+                "status": "Active"
+            }
+        },
+        {
+            "type": "Microsoft.Migrate/MigrateProjects/Solutions",
+            "apiVersion": "2020-05-01",
+            "name": "[concat(parameters('migrateProjectName'), '/Servers-Discovery-ServerDiscovery')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Migrate/MigrateProjects', parameters('migrateProjectName'))]"
+            ],
+            "properties": {
+                "tool": "ServerDiscovery",
+                "purpose": "Discovery",
+                "goal": "Servers",
+                "status": "Inactive"
+            }
+        },
+        {
+            "type": "Microsoft.Migrate/MigrateProjects/Solutions",
+            "apiVersion": "2020-05-01",
+            "name": "[concat(parameters('migrateProjectName'), '/Servers-Migration-ServerMigration')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Migrate/MigrateProjects', parameters('migrateProjectName'))]"
+            ],
+            "properties": {
+                "tool": "ServerMigration",
+                "purpose": "Migration",
+                "goal": "Servers",
+                "status": "Active"
+            }
+        },
+        {
+            "apiVersion": "2020-05-01",
+            "name": "[concat(parameters('migrateProjectName'),'pe')]",
+            "type": "Microsoft.Network/privateEndpoints",
+            "properties": {
+                "privateLinkServiceConnections": [
+                    {
+                        "name": "[concat(parameters('migrateProjectName'),'pe')]",
+                        "properties": {
+                            "privateLinkServiceId": "[resourceId('Microsoft.Migrate/MigrateProjects', parameters('migrateProjectName'))]",
+                            "groupIds": [
+                                "Default"
+                            ]
+                        }
+                    }
+                ],
+                "subnet": {
+                    "id": "[parameters('subnetResourceId')]"
+                }
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Migrate/MigrateProjects', parameters('migrateProjectName'))]"
+            ],
+            "location": "[parameters('subnetLocation')]",
+            "tags": {
+                "MigrateProject": "[parameters('migrateProjectName')]"
+            }
+        }
+    ],
+    "outputs": {
+        "projecturl": {
+            "type": "string",
+            "value": "[reference(resourceId('Microsoft.Migrate/MigrateProjects', parameters('migrateProjectName')), '2020-05-01', 'Full').properties.serviceEndpoint]"
+        }
+    }
+}
