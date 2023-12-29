@@ -15,7 +15,7 @@ $uri = (
     $starter["baseUrl"] + 
     '/instances?' + $starter["requiredQueryStringParameters"] +
     '&taskHub=' + [System.Web.HttpUtility]::UrlEncode($env:WEBSITE_SITE_NAME) +
-    '&createdTimeFrom=' + [System.Web.HttpUtility]::UrlEncode((Get-Date (Get-Date).AddYears(-5) -Format "yyyy-MM-dd")) +
+    '&createdTimeFrom=' + [System.Web.HttpUtility]::UrlEncode((Get-Date (Get-Date).AddYears(-300) -Format "yyyy-MM-dd")) +
     '&createdTimeTo=' + [System.Web.HttpUtility]::UrlEncode((Get-Date (Get-Date).AddDays(-14) -Format "yyyy-MM-dd"))
 )
 
