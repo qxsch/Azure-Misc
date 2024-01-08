@@ -49,7 +49,7 @@ $jsonBody = (@(
         "UptimePercentage" = ([float](1 -  $failedTries / 4))
     }
 ) | ConvertTo-Json -AsArray)
-$headers = @{"Authorization" = ("Bearer $token" + $data.DCR.Token.Token ); "Content-Type" = "application/json" }
+$headers = @{"Authorization" = ("Bearer " + $data.DCR.Token.Token ); "Content-Type" = "application/json" }
 $uri = ( $data.DCR.DceURI + "/dataCollectionRules/" + $data.DCR.DcrImmutableId + "/streams/Custom-" + $data.DCR.Table + "?api-version=2021-11-01-preview" )
 try {
     Invoke-RestMethod -Uri $uri -Method "Post" -Body $jsonBody -Headers $headers | Out-Null
