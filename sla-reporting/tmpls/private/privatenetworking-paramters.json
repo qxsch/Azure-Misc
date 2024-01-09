@@ -1,0 +1,25 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "vnetName": {
+        "value": "vnet-prod"
+      },
+      "functionSubnetName": {
+        "value": "snet-func"
+      },
+      "privateEndpointSubnetName": {
+        "value": "snet-pe"
+      },
+      "vnetAddressPrefix": {
+        "value": "10.100.0.0/24"
+      },
+      "functionSubnetAddressPrefix": {
+        "value": "10.100.0.0/26"
+      },
+      "privateEndpointSubnetAddressPrefix": {
+        "value": "10.100.0.64/26"
+      }
+    }
+  }
+  
