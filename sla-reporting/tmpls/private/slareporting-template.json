@@ -220,7 +220,7 @@
                 "supportsHttpsTrafficOnly": true,
                 "minimumTlsVersion": "TLS1_2",
                 "defaultToOAuthAuthentication": true,
-                "publicNetworkAccess": "Disabled"
+                "allowBlobPublicAccess": false
             }
         },
         {
