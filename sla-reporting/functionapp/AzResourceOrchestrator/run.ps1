@@ -107,13 +107,17 @@ while($true) {
         }
     }
     # consume activity results
-    if($ParallelTasks.Count -gt 0) {
+    <#if($ParallelTasks.Count -gt 0) {
          try {
-            Wait-ActivityFunction -Task $ParallelTasks | Out-Null
+            foreach($task in $ParallelTasks) {
+                if($null -ne $task) {
+                    Wait-ActivityFunction -Task $task | Out-Null
+                }
+            }
          }
          catch {
          }
-    }
+    }#>
     
 
     if ($graphResult.data.Count -lt $BatchSize) {
