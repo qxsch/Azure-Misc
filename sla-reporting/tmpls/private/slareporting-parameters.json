@@ -1,0 +1,58 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "vnetFuncSubnetResourceId": {
+        "value": "<provide the resource id of the virtual network subnet for function app virtual network integration>"
+      },
+      "vnetPrivateEndpointSubnetResourceId": {
+        "value": "<provide the resource id of the virtual network subnet for private endpoints>"
+      },
+      "privateStorageBlobDnsZoneResourceId": {
+        "value": "<provide the resource id of the dns zone for private endpoint storage blob>"
+      },
+      "privateStorageQueueDnsZoneResourceId": {
+        "value": "<provide the resource id of the dns zone for private endpoint storage queue>"
+      },
+      "privateStorageTableDnsZoneResourceId": {
+        "value": "<provide the resource id of the the dns zone for private endpoint storage table>"
+      },
+      "workspaceName": {
+        "value": "sadnj32njsafglaw"
+      },
+      "workspaceSlaTableRetentionINDays": {
+        "value": 30
+      },
+      "dataCollectionRuleName": {
+        "value": "sadnj32njsafgrule"
+      },
+      "dataCollectionEndpointName": {
+        "value": "sadnj32njsafgep"
+      },
+      "functionAppName": {
+        "value": "sadnj32njsafg"
+      },
+      "storageAccountName": {
+        "value": "sadnj32njsafg"
+      },
+      "hostingPlanName": {
+        "value": "sadnj32njsafgplan"
+      },
+      "hostingPlanSku": {
+        "value": "Premium0V3"
+      },
+      "hostingPlanSkuCode": {
+        "value": "P0V3"
+      },
+      "hostingPlanWorkerCount": {
+        "value": 1
+      },
+      "hostingPlanZoneRedundant": {
+        "value": false
+      },
+      "deplyomentFeatures": {
+        "value": "full"
+      }
+    }
+  }
+  
