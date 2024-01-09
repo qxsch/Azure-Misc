@@ -3,25 +3,25 @@
     "contentVersion": "1.0.0.0",
     "parameters": {
         "workspaceName": {
-            "value": "sadnj23njsafglaw"
+            "value": "sadnj32njsafglaw"
         },
         "workspaceSlaTableRetentionINDays": {
             "value": 30
         },
         "dataCollectionRuleName": {
-            "value": "sadnj23njsafgrule"
+            "value": "sadnj32njsafgrule"
         },
         "dataCollectionEndpointName": {
-            "value": "sadnj23njsafgep"
+            "value": "sadnj32njsafgep"
         },
         "functionAppName": {
-            "value": "sadnj23njsafg"
+            "value": "sadnj32njsafg"
         },
         "storageAccountName": {
-            "value": "sadnj23njsafg"
+            "value": "sadnj32njsafg"
         },
         "hostingPlanName": {
-            "value": "sadnj23njsafgplan"
+            "value": "sadnj32njsafgplan"
         },
         "hostingPlanSku": {
             "value": "Premium0V3"
@@ -29,14 +29,8 @@
         "hostingPlanSkuCode": {
             "value": "P0V3"
         },
-        "hostingPlanNumberOfWorkers": {
-            "value": "1"
-        },
-        "hostingPlanWorkerSize": {
-            "value": "18"
-        },
-        "hostingPlanWorkerSizeId": {
-            "value": "18"
+        "hostingPlanWorkerCount": {
+            "value": 1
         },
         "hostingPlanZoneRedundant": {
             "value": false

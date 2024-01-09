@@ -2,6 +2,36 @@
     "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
+        "vnetFuncSubnetResourceId": {
+            "type": "string",
+            "metadata": {
+                "description": "The resource id of the virtual network subnet for function app virtual network integration"
+            }
+        },
+        "vnetPrivateEndpointSubnetResourceId": {
+            "type": "string",
+            "metadata": {
+                "description": "The resource id of the virtual network subnet for private endpoints."
+            }
+        },
+        "privateStorageBlobDnsZoneResourceId": {
+            "type": "string",
+            "metadata": {
+                "description": "The resource id of the dns zone for private endpoint storage blob."
+            }
+        },
+        "privateStorageQueueDnsZoneResourceId": {
+            "type": "string",
+            "metadata": {
+                "description": "The resource id of the dns zone for private endpoint storage queue."
+            }
+        },
+        "privateStorageTableDnsZoneResourceId": {
+            "type": "string",
+            "metadata": {
+                "description": "The resource id of the the dns zone for private endpoint storage table."
+            }
+        },
         "workspaceName": {
             "type": "string"
         },
@@ -45,7 +75,7 @@
               "full-without-role-assignment",
               "just-log-pipeline"
             ]
-          }
+        }
     },
     "variables": {},
     "resources": [
@@ -94,6 +124,14 @@
                         {
                             "name": "DceURI",
                             "value": "[reference(resourceId('Microsoft.Insights/dataCollectionEndpoints', parameters('dataCollectionEndpointName')), '2022-06-01', 'Full').properties.logsIngestion.endpoint]"
+                        },
+                        {
+                            "name": "WEBSITE_VNET_ROUTE_ALL",
+                            "value": "1"
+                        },
+                        {
+                            "name": "WEBSITE_CONTENTOVERVNET",
+                            "value": "1"
                         }
                     ],
                     "cors": {
@@ -104,16 +142,51 @@
                     "use32BitWorkerProcess": false,
                     "ftpsState": "Disabled",
                     "linuxFxVersion": "PowerShell|7.2",
-                    "alwaysOn": true
+                    "alwaysOn": true,
+                    "ipSecurityRestrictionsDefaultAction": "Deny",
+                    "ipSecurityRestrictions": [
+                        {
+                            "ipAddress": "1.2.3.0/24",
+                            "action": "Allow",
+                            "tag": "Default",
+                            "priority": 200,
+                            "name": "example allow some public ips"
+                        },
+                        {
+                            "vnetSubnetResourceId": "[parameters('vnetFuncSubnetResourceId')]",
+                            "action": "Allow",
+                            "tag": "Default",
+                            "priority": 100,
+                            "name": "example allow function vnet"
+                        }
+                    ],
+                    "scmIpSecurityRestrictionsDefaultAction": "Deny",
+                    "scmIpSecurityRestrictions": [
+                        {
+                            "ipAddress": "1.2.3.0/24",
+                            "action": "Allow",
+                            "tag": "Default",
+                            "priority": 210,
+                            "name": "example allow some public ips"
+                        },
+                        {
+                            "vnetSubnetResourceId": "[parameters('vnetFuncSubnetResourceId')]",
+                            "action": "Allow",
+                            "tag": "Default",
+                            "priority": 110,
+                            "name": "example allow function vnet"
+                        }
+                    ]
                 },
                 "clientAffinityEnabled": false,
-                "virtualNetworkSubnetId": null,
                 "publicNetworkAccess": "Enabled",
                 "httpsOnly": true,
                 "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('hostingPlanName'))]",
+                "virtualNetworkSubnetId": "[parameters('vnetFuncSubnetResourceId')]",
+                "vnetRouteAllEnabled": true,        
                 "keyVaultReferenceIdentity": "SystemAssigned"
             }
-        },
+        },      
         {
             "condition": "[or(equals(parameters('deplyomentFeatures'), 'full'), equals(parameters('deplyomentFeatures'), 'full-without-role-assignment'))]",
             "apiVersion": "2022-09-01",
@@ -146,7 +219,8 @@
             "properties": {
                 "supportsHttpsTrafficOnly": true,
                 "minimumTlsVersion": "TLS1_2",
-                "defaultToOAuthAuthentication": true
+                "defaultToOAuthAuthentication": true,
+                "publicNetworkAccess": "Disabled"
             }
         },
         {
