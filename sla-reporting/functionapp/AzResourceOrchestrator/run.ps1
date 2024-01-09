@@ -108,12 +108,11 @@ while($true) {
     }
     # consume activity results
     if($ParallelTasks.Count -gt 0) {
-        $ParallelTasks | Wait-ActivityFunction -Any -ErrorAction Stop
-         <#try {
-            $ParallelTasks | Wait-ActivityFunction -Any -ErrorAction Stop
+         try {
+            $ParallelTasks | Wait-ActivityFunction
          }
          catch {
-         }#>
+         }
     }
     
 
