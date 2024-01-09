@@ -69,14 +69,14 @@ while($true) {
     $ParallelTasks = @()
     foreach($r in $graphResult.data) {
         if($r.type -eq "microsoft.storage/storageaccounts") {
-            $ParallelTasks += (Invoke-DurableActivity -FunctionName 'AzStorageAccountActivity' -Input (([PSCustomObject]@{
+            $ParallelTasks += (Invoke-DurableActivity -NoWait -FunctionName 'AzStorageAccountActivity' -Input (([PSCustomObject]@{
                 "DCR" = $baseData.DCR
                 "SubscriptionId" = $r.subscriptionId
                 "ResourceId" = $r.id
                 "ResourceType" = "Storage Account"
                 "PrimaryEndpoints" = $r.properties.primaryEndpoints
                 "AccessToken" = $baseData.Tokens.StorageAccount.Token
-            }) | ConvertTo-Json -Depth 10 -Compress) -NoWait)
+            }) | ConvertTo-Json -Depth 10 -Compress))
         }
         elseif($r.type -eq "microsoft.web/sites") {
             $k = ([string]$r.kind).ToLower()
@@ -85,17 +85,17 @@ while($true) {
             elseif($k.Contains("workflow")) { # logic app
             }
             elseif($k.Contains("app")) { # web app
-                $ParallelTasks += (Invoke-DurableActivity -FunctionName 'AzWebCallActivity' -Input (([PSCustomObject]@{
+                $ParallelTasks += (Invoke-DurableActivity -NoWait -FunctionName 'AzWebCallActivity' -Input (([PSCustomObject]@{
                     "DCR" = $baseData.DCR
                     "SubscriptionId" = $r.subscriptionId
                     "ResourceId" = $r.id
                     "ResourceType" = "Web App"
                     "Url" = $r.properties.hostNames[0]
-                }) | ConvertTo-Json -Depth 10 -Compress) -NoWait)
+                }) | ConvertTo-Json -Depth 10 -Compress))
             }
         }
         elseif($r.type -eq "microsoft.sql/servers/databases") {
-            $ParallelTasks += (Invoke-DurableActivity -FunctionName 'AzSqlDbActivity' -Input (([PSCustomObject]@{
+            $ParallelTasks += (Invoke-DurableActivity -NoWait -FunctionName 'AzSqlDbActivity' -Input (([PSCustomObject]@{
                 "DCR" = $baseData.DCR
                 "SubscriptionId" = $r.subscriptionId
                 "ResourceId" = $r.id
@@ -103,13 +103,13 @@ while($true) {
                 "ServerName"   = ( (($r.id -split '/')[8]) + ".database.windows.net" )
                 "DatabaseName" = $r.name
                 "AccessToken" = $baseData.Tokens.SQLDatabase.Token
-            }) | ConvertTo-Json -Depth 10 -Compress) -NoWait)
+            }) | ConvertTo-Json -Depth 10 -Compress))
         }
     }
     # consume activity results
     if($ParallelTasks.Count -gt 0) {
          try {
-            $ParallelTasks | Wait-ActivityFunction
+            Wait-ActivityFunction -Task $ParallelTasks | Out-Null
          }
          catch {
          }
