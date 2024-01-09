@@ -68,9 +68,8 @@ while($true) {
     # processing result batch
     $ParallelTasks = @()
     foreach($r in $graphResult.data) {
-        $task = $null
         if($r.type -eq "microsoft.storage/storageaccounts") {
-            $task = (Invoke-DurableActivity -FunctionName 'AzStorageAccountActivity' -Input (([PSCustomObject]@{
+            $ParallelTasks += (Invoke-DurableActivity -FunctionName 'AzStorageAccountActivity' -Input (([PSCustomObject]@{
                 "DCR" = $baseData.DCR
                 "SubscriptionId" = $r.subscriptionId
                 "ResourceId" = $r.id
@@ -86,7 +85,7 @@ while($true) {
             elseif($k.Contains("workflow")) { # logic app
             }
             elseif($k.Contains("app")) { # web app
-                $task = (Invoke-DurableActivity -FunctionName 'AzWebCallActivity' -Input (([PSCustomObject]@{
+                $ParallelTasks += (Invoke-DurableActivity -FunctionName 'AzWebCallActivity' -Input (([PSCustomObject]@{
                     "DCR" = $baseData.DCR
                     "SubscriptionId" = $r.subscriptionId
                     "ResourceId" = $r.id
@@ -96,7 +95,7 @@ while($true) {
             }
         }
         elseif($r.type -eq "microsoft.sql/servers/databases") {
-            $task = (Invoke-DurableActivity -FunctionName 'AzSqlDbActivity' -Input (([PSCustomObject]@{
+            $ParallelTasks += (Invoke-DurableActivity -FunctionName 'AzSqlDbActivity' -Input (([PSCustomObject]@{
                 "DCR" = $baseData.DCR
                 "SubscriptionId" = $r.subscriptionId
                 "ResourceId" = $r.id
@@ -106,14 +105,15 @@ while($true) {
                 "AccessToken" = $baseData.Tokens.SQLDatabase.Token
             }) | ConvertTo-Json -Depth 10 -Compress) -NoWait)
         }
-        # add task?
-        if($null -ne $task) {
-            $ParallelTasks += $task
-        }
     }
     # consume activity results
     if($ParallelTasks.Count -gt 0) {
-        Wait-ActivityFunction -Task $ParallelTasks | Out-Null
+        $ParallelTasks | Wait-ActivityFunction -Any -ErrorAction Stop
+         <#try {
+            $ParallelTasks | Wait-ActivityFunction -Any -ErrorAction Stop
+         }
+         catch {
+         }#>
     }
     
 
