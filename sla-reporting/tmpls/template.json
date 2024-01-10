@@ -56,9 +56,39 @@
               "full-without-role-assignment",
               "just-log-pipeline"
             ]
-          }
+        },
+        "functionIngressRestrictions": {
+            "type": "object",
+            "defaultValue": {
+                "ipSecurityRestrictionsDefaultAction": "Deny",
+                "ipSecurityRestrictions": [
+                    {
+                        "ipAddress": "1.2.3.0/24",
+                        "action": "Allow",
+                        "tag": "Default",
+                        "priority": 200,
+                        "name": "example to allow some public ips"
+                    }
+                ],
+                "scmIpSecurityRestrictionsDefaultAction": "Deny",
+                "scmIpSecurityRestrictions": [
+                    {
+                        "ipAddress": "1.2.3.0/24",
+                        "action": "Allow",
+                        "tag": "Default",
+                        "priority": 210,
+                        "name": "example to allow some public ips"
+                    }
+                ]
+            }
+        }
     },
-    "variables": {},
+    "variables": {
+        "ipSecurityRestrictionsDefaultAction": "[if(contains(parameters('functionIngressRestrictions'), 'ipSecurityRestrictionsDefaultAction'), parameters('functionIngressRestrictions').ipSecurityRestrictionsDefaultAction, 'Deny')]",
+        "scmIpSecurityRestrictionsDefaultAction": "[if(contains(parameters('functionIngressRestrictions'), 'scmIpSecurityRestrictionsDefaultAction'), parameters('functionIngressRestrictions').scmIpSecurityRestrictionsDefaultAction, 'Deny')]",
+        "ipSecurityRestrictions": "[if(contains(parameters('functionIngressRestrictions'), 'ipSecurityRestrictions'), parameters('functionIngressRestrictions').ipSecurityRestrictions, json('[]'))]",
+        "scmIpSecurityRestrictions": "[if(contains(parameters('functionIngressRestrictions'), 'scmIpSecurityRestrictions'), parameters('functionIngressRestrictions').scmIpSecurityRestrictions, json('[]'))]"
+    },
     "resources": [
         {
             "condition": "[or(equals(parameters('deplyomentFeatures'), 'full'), equals(parameters('deplyomentFeatures'), 'full-without-role-assignment'))]",
@@ -115,7 +145,11 @@
                     "use32BitWorkerProcess": false,
                     "ftpsState": "Disabled",
                     "linuxFxVersion": "PowerShell|7.2",
-                    "alwaysOn": true
+                    "alwaysOn": true,
+                    "ipSecurityRestrictionsDefaultAction": "[variables('ipSecurityRestrictionsDefaultAction')]",
+                    "ipSecurityRestrictions": "[variables('ipSecurityRestrictions')]",
+                    "scmIpSecurityRestrictionsDefaultAction": "[variables('scmIpSecurityRestrictionsDefaultAction')]",
+                    "scmIpSecurityRestrictions": "[variables('scmIpSecurityRestrictions')]"
                 },
                 "clientAffinityEnabled": false,
                 "virtualNetworkSubnetId": null,

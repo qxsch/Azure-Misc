@@ -34,6 +34,44 @@
         },
         "hostingPlanZoneRedundant": {
             "value": false
+        },
+        "functionIngressRestrictions": {
+            "value": {
+              "ipSecurityRestrictionsDefaultAction": "Deny",
+              "ipSecurityRestrictions": [
+                  {
+                    "ipAddress": "1.2.3.0/24",
+                    "action": "Allow",
+                    "tag": "Default",
+                    "priority": 200,
+                    "name": "example to allow some public ips"
+                  },
+                  {
+                    "vnetSubnetResourceId": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg/providers/Microsoft.Network/virtualNetworks/myvnet/subnets/mysubnet",
+                    "action": "Allow",
+                    "tag": "Default",
+                    "priority": 100,
+                    "name": "example to allow a vnet subnet"
+                  }
+              ],
+              "scmIpSecurityRestrictionsDefaultAction": "Deny",
+              "scmIpSecurityRestrictions": [
+                  {
+                    "ipAddress": "1.2.3.0/24",
+                    "action": "Allow",
+                    "tag": "Default",
+                    "priority": 210,
+                    "name": "example to allow some public ips"
+                  },
+                  {
+                    "vnetSubnetResourceId": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg/providers/Microsoft.Network/virtualNetworks/myvnet/subnets/mysubnet",
+                    "action": "Allow",
+                    "tag": "Default",
+                    "priority": 110,
+                    "name": "example to allow a vnet subnet"
+                  }
+              ]
+            }
         }
     }
 }

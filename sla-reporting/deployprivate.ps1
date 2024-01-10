@@ -17,6 +17,7 @@ param(
     [bool]   $hostingPlanZoneRedundant = $false,
     [ValidateSet("full", "full-without-role-assignment", "just-log-pipeline")]
     [string] $deplyomentFeatures = "full",
+    $functionIngressRestrictions = $null,
     
     # either the networkingrg parametermust be specified (in case the networking resources must be deployed) you can also optionally specify the following parameters
     [string]$networkingrg = "",
@@ -100,6 +101,7 @@ if($dataCollectionEndpointName -ne "") { $params["dataCollectionEndpointName"] =
 if($storageAccountName -ne "") { $params["storageAccountName"] = $storageAccountName }
 if($hostingPlanName -ne "") { $params["hostingPlanName"] = $hostingPlanName }
 if($functionAppName -ne "") { $params["functionAppName"] = $functionAppName }
+if($null -ne $functionIngressRestrictions) { $params["functionIngressRestrictions"] = $functionIngressRestrictions }
 # deploying
 $result = New-AzResourceGroupDeployment -ResourceGroupName $slareportingrg -TemplateFile .\tmpls\private\slareporting-template.json @params
 # output
