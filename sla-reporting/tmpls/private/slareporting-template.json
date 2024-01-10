@@ -219,19 +219,186 @@
         },
         {
             "condition": "[or(equals(parameters('deplyomentFeatures'), 'full'), equals(parameters('deplyomentFeatures'), 'full-without-role-assignment'))]",
-            "apiVersion": "2022-05-01",
             "type": "Microsoft.Storage/storageAccounts",
+            "apiVersion": "2023-01-01",
             "name": "[parameters('storageAccountName')]",
             "location": "[resourceGroup().location]",
-            "tags": {},
             "sku": {
-                "name": "Standard_LRS"
+                "name": "Standard_LRS",
+                "tier": "Standard"
             },
+            "kind": "StorageV2",
             "properties": {
-                "supportsHttpsTrafficOnly": true,
+                "defaultToOAuthAuthentication": false,
+                "publicNetworkAccess": "Enabled",
+                "allowCrossTenantReplication": false,
                 "minimumTlsVersion": "TLS1_2",
-                "defaultToOAuthAuthentication": true,
-                "allowBlobPublicAccess": false
+                "allowBlobPublicAccess": false,
+                "allowSharedKeyAccess": true,
+                "networkAcls": {
+                    "bypass": "AzureServices",
+                    "virtualNetworkRules": [],
+                    "ipRules": [],
+                    "defaultAction": "Allow"
+                },
+                "supportsHttpsTrafficOnly": true,
+                "encryption": {
+                    "requireInfrastructureEncryption": false,
+                    "services": {
+                        "file": {
+                            "keyType": "Account",
+                            "enabled": true
+                        },
+                        "blob": {
+                            "keyType": "Account",
+                            "enabled": true
+                        }
+                    },
+                    "keySource": "Microsoft.Storage"
+                },
+                "accessTier": "Hot"
+            }
+        },
+        {
+            "condition": "[or(equals(parameters('deplyomentFeatures'), 'full'), equals(parameters('deplyomentFeatures'), 'full-without-role-assignment'))]",
+            "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
+            "apiVersion": "2022-01-01",
+            "name": "pesablob/default",
+            "properties": {
+              "privateDnsZoneConfigs": [
+                {
+                  "name": "dnsConfig",
+                  "properties": {
+                    "privateDnsZoneId": "[parameters('privateStorageBlobDnsZoneResourceId')]"
+                  }
+                }
+              ]
+            },
+            "dependsOn": [
+              "[resourceId('Microsoft.Network/privateEndpoints', 'pesablob')]",
+              "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+            ]
+          },
+          {
+            "condition": "[or(equals(parameters('deplyomentFeatures'), 'full'), equals(parameters('deplyomentFeatures'), 'full-without-role-assignment'))]",
+            "type": "Microsoft.Network/privateEndpoints",
+            "apiVersion": "2022-01-01",
+            "name": "pesablob",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+              "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+            ],
+            "properties": {
+              "subnet": {
+                "id": "[parameters('vnetPrivateEndpointSubnetResourceId')]"
+              },
+              "customNetworkInterfaceName": "pesablob-nic",
+              "privateLinkServiceConnections": [
+                {
+                  "name": "pesablob",
+                  "properties": {
+                    "privateLinkServiceId": "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]",
+                    "groupIds": [
+                      "blob"
+                    ]
+                  }
+                }
+              ]
+            }
+        },
+
+        {
+            "condition": "[or(equals(parameters('deplyomentFeatures'), 'full'), equals(parameters('deplyomentFeatures'), 'full-without-role-assignment'))]",
+            "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
+            "apiVersion": "2022-01-01",
+            "name": "pesatable/default",
+            "properties": {
+              "privateDnsZoneConfigs": [
+                {
+                  "name": "dnsConfig",
+                  "properties": {
+                    "privateDnsZoneId": "[parameters('privateStorageTableDnsZoneResourceId')]"
+                  }
+                }
+              ]
+            },
+            "dependsOn": [
+              "[resourceId('Microsoft.Network/privateEndpoints', 'pesatable')]",
+              "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+            ]
+          },
+          {
+            "condition": "[or(equals(parameters('deplyomentFeatures'), 'full'), equals(parameters('deplyomentFeatures'), 'full-without-role-assignment'))]",
+            "type": "Microsoft.Network/privateEndpoints",
+            "apiVersion": "2022-01-01",
+            "name": "pesatable",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+              "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+            ],
+            "properties": {
+              "subnet": {
+                "id": "[parameters('vnetPrivateEndpointSubnetResourceId')]"
+              },
+              "customNetworkInterfaceName": "pesatable-nic",
+              "privateLinkServiceConnections": [
+                {
+                  "name": "pesatable",
+                  "properties": {
+                    "privateLinkServiceId": "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]",
+                    "groupIds": [
+                      "table"
+                    ]
+                  }
+                }
+              ]
+            }
+        },
+        {
+            "condition": "[or(equals(parameters('deplyomentFeatures'), 'full'), equals(parameters('deplyomentFeatures'), 'full-without-role-assignment'))]",
+            "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
+            "apiVersion": "2022-01-01",
+            "name": "pesaqueue/default",
+            "properties": {
+              "privateDnsZoneConfigs": [
+                {
+                  "name": "dnsConfig",
+                  "properties": {
+                    "privateDnsZoneId": "[parameters('privateStorageQueueDnsZoneResourceId')]"
+                  }
+                }
+              ]
+            },
+            "dependsOn": [
+              "[resourceId('Microsoft.Network/privateEndpoints', 'pesaqueue')]",
+              "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+            ]
+          },
+          {
+            "condition": "[or(equals(parameters('deplyomentFeatures'), 'full'), equals(parameters('deplyomentFeatures'), 'full-without-role-assignment'))]",
+            "type": "Microsoft.Network/privateEndpoints",
+            "apiVersion": "2022-01-01",
+            "name": "pesaqueue",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+              "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+            ],
+            "properties": {
+              "subnet": {
+                "id": "[parameters('vnetPrivateEndpointSubnetResourceId')]"
+              },
+              "customNetworkInterfaceName": "pesaqueue-nic",
+              "privateLinkServiceConnections": [
+                {
+                  "name": "pesaqueue",
+                  "properties": {
+                    "privateLinkServiceId": "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]",
+                    "groupIds": [
+                      "queue"
+                    ]
+                  }
+                }
+              ]
             }
         },
         {

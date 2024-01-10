@@ -146,18 +146,44 @@
         },
         {
             "condition": "[or(equals(parameters('deplyomentFeatures'), 'full'), equals(parameters('deplyomentFeatures'), 'full-without-role-assignment'))]",
-            "apiVersion": "2022-05-01",
             "type": "Microsoft.Storage/storageAccounts",
+            "apiVersion": "2023-01-01",
             "name": "[parameters('storageAccountName')]",
             "location": "[resourceGroup().location]",
-            "tags": {},
             "sku": {
-                "name": "Standard_LRS"
+                "name": "Standard_LRS",
+                "tier": "Standard"
             },
+            "kind": "StorageV2",
             "properties": {
-                "supportsHttpsTrafficOnly": true,
+                "defaultToOAuthAuthentication": false,
+                "publicNetworkAccess": "Enabled",
+                "allowCrossTenantReplication": false,
                 "minimumTlsVersion": "TLS1_2",
-                "defaultToOAuthAuthentication": true
+                "allowBlobPublicAccess": false,
+                "allowSharedKeyAccess": true,
+                "networkAcls": {
+                    "bypass": "AzureServices",
+                    "virtualNetworkRules": [],
+                    "ipRules": [],
+                    "defaultAction": "Allow"
+                },
+                "supportsHttpsTrafficOnly": true,
+                "encryption": {
+                    "requireInfrastructureEncryption": false,
+                    "services": {
+                        "file": {
+                            "keyType": "Account",
+                            "enabled": true
+                        },
+                        "blob": {
+                            "keyType": "Account",
+                            "enabled": true
+                        }
+                    },
+                    "keySource": "Microsoft.Storage"
+                },
+                "accessTier": "Hot"
             }
         },
         {

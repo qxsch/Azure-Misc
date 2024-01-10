@@ -34,11 +34,15 @@ param(
     [string]$privateStorageTableDnsZoneResourceId = ""
 )
 
+if($deplyomentFeatures -eq "just-log-pipeline") {
+    throw "Please use the non-private deployment templates (template.json and parameters.json)"
+}
+
 
 # optional baseline networking resources deployment
 if( $networkingrg -ne "" ) {
     if($vnetFuncSubnetResourceId -ne "" -or $vnetPrivateEndpointSubnetResourceId -ne "" -or $privateStorageBlobDnsZoneResourceId -ne "" -or $privateStorageQueueDnsZoneResourceId -ne "" -or $privateStorageTableDnsZoneResourceId -ne "") {
-        throw "If networkingrg is specified, then all networking resource id parameters must be empty (do not use -vnetFuncSubnetResourceId, -vnetPrivateEndpointSubnetResourceId, -privateStorageBlobDnsZoneResourceId, -privateStorageQueueDnsZoneResourceId, -privateStorageTableDnsZoneResourceId)"
+        throw "If -networkingrg is being used, then all networking resource id parameters must be empty (do not use -vnetFuncSubnetResourceId, -vnetPrivateEndpointSubnetResourceId, -privateStorageBlobDnsZoneResourceId, -privateStorageQueueDnsZoneResourceId, -privateStorageTableDnsZoneResourceId)"
     }
 
     Write-Host -ForegroundColor Green "Deploying networking resources to $networkingrg"
@@ -67,7 +71,7 @@ if( $networkingrg -ne "" ) {
     Write-Host "Tip: You can skip networking deployment in the futre (please remove -networkingrg parameter and add the following ones instead):   -vnetFuncSubnetResourceId `"$vnetFuncSubnetResourceId`" -vnetPrivateEndpointSubnetResourceId `"$vnetPrivateEndpointSubnetResourceId`" -privateStorageBlobDnsZoneResourceId `"$privateStorageBlobDnsZoneResourceId`" -privateStorageQueueDnsZoneResourceId `"$privateStorageQueueDnsZoneResourceId`" -privateStorageTableDnsZoneResourceId `"$privateStorageTableDnsZoneResourceId`""
 }
 elseif($vnetFuncSubnetResourceId -eq "" -or $vnetPrivateEndpointSubnetResourceId -eq "" -or $privateStorageBlobDnsZoneResourceId -eq "" -or $privateStorageQueueDnsZoneResourceId -eq "" -or $privateStorageTableDnsZoneResourceId -eq "") {
-    throw "If networkingrg is not specified, then all networking resource id parameters must be specified"
+    throw "If -networkingrg is not used, then all networking resource id parameters must be specified (use -vnetFuncSubnetResourceId, -vnetPrivateEndpointSubnetResourceId, -privateStorageBlobDnsZoneResourceId, -privateStorageQueueDnsZoneResourceId, -privateStorageTableDnsZoneResourceId)"
 }
 else {
     Write-Host -ForegroundColor Green "Using existing networking resources"
