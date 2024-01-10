@@ -3,39 +3,50 @@
     "contentVersion": "1.0.0.0",
     "parameters": {
         "workspaceName": {
-            "type": "string"
+            "type": "string",
+            "defaultValue": "[format('law{0}', uniqueString(resourceGroup().id))]"
         },
         "workspaceSlaTableRetentionINDays": {
             "type": "int",
+            "defaultValue": 30,
             "minValue": 30,
             "maxValue": 730
         },
         "dataCollectionRuleName": {
-            "type": "string"
+            "type": "string",
+            "defaultValue": "[format('dcr-{0}', uniqueString(resourceGroup().id))]"
         },
         "dataCollectionEndpointName": {
-            "type": "string"
+            "type": "string",
+            "defaultValue": "[format('ep-{0}', uniqueString(resourceGroup().id))]"
         },
         "functionAppName": {
-            "type": "string"
+            "type": "string",
+            "defaultValue": "[format('funcapp-{0}', uniqueString(resourceGroup().id))]"
         },
         "storageAccountName": {
-            "type": "string"
+            "type": "string",
+            "defaultValue": "[format('sa{0}', uniqueString(resourceGroup().id))]"
         },
         "hostingPlanName": {
-            "type": "string"
+            "type": "string",
+            "defaultValue": "[format('plan-{0}', uniqueString(resourceGroup().id))]"
         },
         "hostingPlanSku": {
-            "type": "string"
+            "type": "string",
+            "defaultValue": "Premium0V3"
         },
         "hostingPlanSkuCode": {
-            "type": "string"
+            "type": "string",
+            "defaultValue": "P0V3"
         },
         "hostingPlanWorkerCount": {
-            "type": "int"
+            "type": "int",
+            "defaultValue": 1
         },
         "hostingPlanZoneRedundant": {
-            "type": "bool"
+            "type": "bool",
+            "defaultValue": false
         },
         "deplyomentFeatures": {
             "type": "string",

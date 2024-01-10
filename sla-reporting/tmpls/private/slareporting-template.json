@@ -1,5 +1,5 @@
 {
-    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "$schema": "http://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
         "vnetFuncSubnetResourceId": {
@@ -33,39 +33,50 @@
             }
         },
         "workspaceName": {
-            "type": "string"
+            "type": "string",
+            "defaultValue": "[format('law{0}', uniqueString(resourceGroup().id))]"
         },
         "workspaceSlaTableRetentionINDays": {
             "type": "int",
+            "defaultValue": 30,
             "minValue": 30,
             "maxValue": 730
         },
         "dataCollectionRuleName": {
-            "type": "string"
+            "type": "string",
+            "defaultValue": "[format('dcr-{0}', uniqueString(resourceGroup().id))]"
         },
         "dataCollectionEndpointName": {
-            "type": "string"
+            "type": "string",
+            "defaultValue": "[format('ep-{0}', uniqueString(resourceGroup().id))]"
         },
         "functionAppName": {
-            "type": "string"
+            "type": "string",
+            "defaultValue": "[format('funcapp-{0}', uniqueString(resourceGroup().id))]"
         },
         "storageAccountName": {
-            "type": "string"
+            "type": "string",
+            "defaultValue": "[format('sa{0}', uniqueString(resourceGroup().id))]"
         },
         "hostingPlanName": {
-            "type": "string"
+            "type": "string",
+            "defaultValue": "[format('plan-{0}', uniqueString(resourceGroup().id))]"
         },
         "hostingPlanSku": {
-            "type": "string"
+            "type": "string",
+            "defaultValue": "Premium0V3"
         },
         "hostingPlanSkuCode": {
-            "type": "string"
+            "type": "string",
+            "defaultValue": "P0V3"
         },
         "hostingPlanWorkerCount": {
-            "type": "int"
+            "type": "int",
+            "defaultValue": 1
         },
         "hostingPlanZoneRedundant": {
-            "type": "bool"
+            "type": "bool",
+            "defaultValue": false
         },
         "deplyomentFeatures": {
             "type": "string",
@@ -75,9 +86,39 @@
               "full-without-role-assignment",
               "just-log-pipeline"
             ]
+        },
+        "functionIngressRestrictions": {
+            "type": "object",
+            "defaultValue": {
+                "ipSecurityRestrictionsDefaultAction": "Deny",
+                "ipSecurityRestrictions": [
+                    {
+                        "ipAddress": "1.2.3.0/24",
+                        "action": "Allow",
+                        "tag": "Default",
+                        "priority": 200,
+                        "name": "example to allow some public ips"
+                    }
+                ],
+                "scmIpSecurityRestrictionsDefaultAction": "Deny",
+                "scmIpSecurityRestrictions": [
+                    {
+                        "ipAddress": "1.2.3.0/24",
+                        "action": "Allow",
+                        "tag": "Default",
+                        "priority": 210,
+                        "name": "example to allow some public ips"
+                    }
+                ]
+            }
         }
     },
-    "variables": {},
+    "variables": {
+        "ipSecurityRestrictionsDefaultAction": "[if(contains(parameters('functionIngressRestrictions'), 'ipSecurityRestrictionsDefaultAction'), parameters('functionIngressRestrictions').ipSecurityRestrictionsDefaultAction, 'Deny')]",
+        "scmIpSecurityRestrictionsDefaultAction": "[if(contains(parameters('functionIngressRestrictions'), 'scmIpSecurityRestrictionsDefaultAction'), parameters('functionIngressRestrictions').scmIpSecurityRestrictionsDefaultAction, 'Deny')]",
+        "ipSecurityRestrictions": "[concat(array(createObject('vnetSubnetResourceId', parameters('vnetFuncSubnetResourceId'),  'action', 'Allow',  'tag', 'Default',  'priority', 1,  'name', 'Allow function vnet')), if(contains(parameters('functionIngressRestrictions'), 'ipSecurityRestrictions'), parameters('functionIngressRestrictions').ipSecurityRestrictions, json('[]')) )]",
+        "scmIpSecurityRestrictions": "[if(contains(parameters('functionIngressRestrictions'), 'scmIpSecurityRestrictions'), parameters('functionIngressRestrictions').scmIpSecurityRestrictions, json('[]'))]"
+    },
     "resources": [
         {
             "condition": "[or(equals(parameters('deplyomentFeatures'), 'full'), equals(parameters('deplyomentFeatures'), 'full-without-role-assignment'))]",
@@ -143,40 +184,10 @@
                     "ftpsState": "Disabled",
                     "linuxFxVersion": "PowerShell|7.2",
                     "alwaysOn": true,
-                    "ipSecurityRestrictionsDefaultAction": "Deny",
-                    "ipSecurityRestrictions": [
-                        {
-                            "ipAddress": "1.2.3.0/24",
-                            "action": "Allow",
-                            "tag": "Default",
-                            "priority": 200,
-                            "name": "example allow some public ips"
-                        },
-                        {
-                            "vnetSubnetResourceId": "[parameters('vnetFuncSubnetResourceId')]",
-                            "action": "Allow",
-                            "tag": "Default",
-                            "priority": 100,
-                            "name": "example allow function vnet"
-                        }
-                    ],
-                    "scmIpSecurityRestrictionsDefaultAction": "Deny",
-                    "scmIpSecurityRestrictions": [
-                        {
-                            "ipAddress": "1.2.3.0/24",
-                            "action": "Allow",
-                            "tag": "Default",
-                            "priority": 210,
-                            "name": "example allow some public ips"
-                        },
-                        {
-                            "vnetSubnetResourceId": "[parameters('vnetFuncSubnetResourceId')]",
-                            "action": "Allow",
-                            "tag": "Default",
-                            "priority": 110,
-                            "name": "example allow function vnet"
-                        }
-                    ]
+                    "ipSecurityRestrictionsDefaultAction": "[variables('ipSecurityRestrictionsDefaultAction')]",
+                    "ipSecurityRestrictions": "[variables('ipSecurityRestrictions')]",
+                    "scmIpSecurityRestrictionsDefaultAction": "[variables('scmIpSecurityRestrictionsDefaultAction')]",
+                    "scmIpSecurityRestrictions": "[variables('scmIpSecurityRestrictions')]"
                 },
                 "clientAffinityEnabled": false,
                 "publicNetworkAccess": "Enabled",
