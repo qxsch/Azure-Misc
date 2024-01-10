@@ -60,7 +60,7 @@
         "functionIngressRestrictions": {
             "type": "object",
             "defaultValue": {
-                "ipSecurityRestrictionsDefaultAction": "Deny",
+                "ipSecurityRestrictionsDefaultAction": "Allow",
                 "ipSecurityRestrictions": [
                     {
                         "ipAddress": "1.2.3.0/24",
@@ -70,7 +70,7 @@
                         "name": "example to allow some public ips"
                     }
                 ],
-                "scmIpSecurityRestrictionsDefaultAction": "Deny",
+                "scmIpSecurityRestrictionsDefaultAction": "Allow",
                 "scmIpSecurityRestrictions": [
                     {
                         "ipAddress": "1.2.3.0/24",
@@ -401,6 +401,10 @@
         "DceURI": {
             "type": "string",
             "value": "[reference(resourceId('Microsoft.Insights/dataCollectionEndpoints', parameters('dataCollectionEndpointName')), '2022-06-01', 'Full').properties.logsIngestion.endpoint]"
+        },
+        "functionAppName": {
+            "type": "string",
+            "value": "[parameters('functionAppName')]"
         }
     }
 }

@@ -20,6 +20,10 @@ param(
     $functionIngressRestrictions = $null
 )
 
+if($null -eq $functionIngressRestrictions) {
+    Write-Host -ForegroundColor Yellow "Using default function ingress restrictions (allow all)"
+}
+
 # sla solution deployment
 Write-Host -ForegroundColor Green "Deploying sla reporting resources to $slareportingrg"
 
@@ -45,4 +49,24 @@ Write-Host -ForegroundColor Green "Output:"
 foreach($o in $result.Outputs.GetEnumerator()) {
     Write-Host -ForegroundColor Green ("{0,20}  =  {1}" -f @($o.Key, $o.Value.Value))
 }
+# setting function app name
+if($functionAppName -eq "") {
+    $functionAppName = $result.Outputs.functionAppName.Value
+}
 
+
+if(Test-Path .\functionapp.zip -PathType Leaf) {
+    Write-Host "Removing old functionapp.zip"
+    Remove-Item .\functionapp.zip -Force | Out-Null
+}
+Write-Host "Creating functionapp.zip"
+Compress-Archive -Path .\functionapp\* -DestinationPath .\functionapp.zip -Force
+
+# checking settings
+$settings = Get-AzFunctionAppSetting -ResourceGroupName $slareportingrg -Name $functionAppName 
+if($settings.SCM_DO_BUILD_DURING_DEPLOYMENT -and $settings.SCM_DO_BUILD_DURING_DEPLOYMENT -ne "false") {
+    Write-Host "Disabling build during deployment"
+    Update-AzFunctionAppSetting -ResourceGroupName $slareportingrg -Name $functionAppName -AppSetting @{"SCM_DO_BUILD_DURING_DEPLOYMENT" = "false"} | Out-Null
+}
+Write-Host "Publishing function app"
+Publish-AzWebApp -ResourceGroupName $slareportingrg -Name $functionAppName -ArchivePath .\functionapp.zip -Force | Out-Null
