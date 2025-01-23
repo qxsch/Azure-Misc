@@ -1,0 +1,100 @@
+{
+    "name": "DurabaleFuncCaller",
+    "properties": {
+        "activities": [
+            {
+                "name": "FuncCall",
+                "type": "AzureFunctionActivity",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "0.00:10:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "functionName": {
+                        "value": "@pipeline().parameters.functionRoute",
+                        "type": "Expression"
+                    },
+                    "method": "GET"
+                },
+                "linkedServiceName": {
+                    "referenceName": "AzureFunc",
+                    "type": "LinkedServiceReference"
+                }
+            },
+            {
+                "name": "FuncStatus",
+                "type": "WebActivity",
+                "dependsOn": [
+                    {
+                        "activity": "FuncCall",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 4000,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "method": "GET",
+                    "url": {
+                        "value": "@activity('FuncCall').output.statusQueryGetUri",
+                        "type": "Expression"
+                    }
+                }
+            },
+            {
+                "name": "PipelineResult",
+                "type": "SetVariable",
+                "dependsOn": [
+                    {
+                        "activity": "FuncStatus",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "variableName": "pipelineReturnValue",
+                    "value": [
+                        {
+                            "key": "FunctionResult",
+                            "value": {
+                                "type": "Expression",
+                                "content": "@activity('FuncStatus').output"
+                            }
+                        }
+                    ],
+                    "setSystemVariable": true
+                }
+            }
+        ],
+        "parameters": {
+            "functionRoute": {
+                "type": "String",
+                "defaultValue": "httpdurable"
+            }
+        },
+        "variables": {
+            "Result": {
+                "type": "String"
+            }
+        },
+        "annotations": []
+    }
+}

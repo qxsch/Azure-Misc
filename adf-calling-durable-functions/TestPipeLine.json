@@ -1,0 +1,56 @@
+{
+    "name": "TestPipe",
+    "properties": {
+        "activities": [
+            {
+                "name": "ExecuteDurableFunc",
+                "type": "ExecutePipeline",
+                "dependsOn": [],
+                "policy": {
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "pipeline": {
+                        "referenceName": "DurabaleFuncCaller",
+                        "type": "PipelineReference"
+                    },
+                    "waitOnCompletion": true,
+                    "parameters": {
+                        "functionRoute": "httpdurable"
+                    }
+                }
+            },
+            {
+                "name": "FuncResult",
+                "type": "SetVariable",
+                "dependsOn": [
+                    {
+                        "activity": "ExecuteDurableFunc",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "variableName": "CustomStatus",
+                    "value": {
+                        "value": "@activity('ExecuteDurableFunc').output.pipelineReturnValue.FunctionResult.CustomStatus",
+                        "type": "Expression"
+                    }
+                }
+            }
+        ],
+        "variables": {
+            "CustomStatus": {
+                "type": "String"
+            }
+        },
+        "annotations": []
+    }
+}
