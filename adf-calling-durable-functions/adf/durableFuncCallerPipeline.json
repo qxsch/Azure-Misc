@@ -22,7 +22,7 @@
                     "method": "GET"
                 },
                 "linkedServiceName": {
-                    "referenceName": "AzureFunc",
+                    "referenceName": "AzureFunctionApp",
                     "type": "LinkedServiceReference"
                 }
             },
@@ -47,9 +47,19 @@
                 "userProperties": [],
                 "typeProperties": {
                     "method": "GET",
+                    "linkedServices": [
+                        {
+                            "referenceName": "AzureFunctionApp",
+                            "type": "LinkedServiceReference"
+                        }
+                    ],
                     "url": {
                         "value": "@activity('FuncCall').output.statusQueryGetUri",
                         "type": "Expression"
+                    },
+                    "connectVia": {
+                        "referenceName": "AutoResolveIntegrationRuntime",
+                        "type": "IntegrationRuntimeReference"
                     }
                 }
             },
