@@ -4,6 +4,8 @@ Deploys a durable function and an Azure Data Factory pipeline that calls the dur
 
 The DurabaleFuncCaller is a resuable pipeline that can be called from any other pipeline in the data factory.
 
+![ADF pipeline calling durable function](./adfpipe.png)
+
 ## Setup
 
 ```pwsh
