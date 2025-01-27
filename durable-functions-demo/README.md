@@ -1,14 +1,24 @@
-# Durable functions demo
+# Durable Functions in PowerShell
 
-This is a simple demo of durable functions in Azure Functions.
+## Setup
+Run the following command to setup the deomo:
+```pwsh
+# just run with defaults
+.\setup.ps1
+# or specify the location and resource group
+.\setup.ps1 -location <location> -resourceGroup <resourceGroup>
+```
 
-There are 2 versions:
-  - [Powershell](powershell/README.md):  This version uses Powershell.
-  - [Python](python/README.md):  This version uses Python.
-
-Choose the one you prefer.
-
+## Run the the demo
+Run the following command to run the demo:
+```pwsh
+# just run with defaults
+.\test.ps1
+# or specify the resource group
+.\test.ps1 -resourceGroup <resourceGroup>
+```
 
 ## Useful links
 
 * [Durable Functions Monitor](https://github.com/microsoft/DurableFunctionsMonitor?tab=readme-ov-file) - A monitoring/debugging UI tool for Durable Functions.
+* [Best Practices for Durable Functions](https://learn.microsoft.com/en-us/azure/azure-functions/durable/durable-functions-best-practice-reference) - Durable Functions best practices and diagnostic tools
