@@ -7,3 +7,8 @@ There are 2 versions:
   - [Python](python/README.md):  This version uses Python.
 
 Choose the one you prefer.
+
+
+## Useful links
+
+* [Durable Functions Monitor](https://github.com/microsoft/DurableFunctionsMonitor?tab=readme-ov-file) - A monitoring/debugging UI tool for Durable Functions.
