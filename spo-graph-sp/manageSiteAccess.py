@@ -67,7 +67,7 @@ class MyArgParser:
             if args.client_id == '':
                 args.client_id = os.getenv('AZURE_CLIENT_ID', '')
             if args.client_secret == '':
-                args.spo_client_secret = os.getenv('AZURE_CLIENT_SECRET', '')
+                args.client_secret = os.getenv('AZURE_CLIENT_SECRET', '')
         except:
             pass
         return args
@@ -349,11 +349,14 @@ try:
     if args.output == '':
         pass
     if args.tenant_id == '':
-        pass
+        print("Missing --tenant-id")
+        raise Exception("Missing --tenant-id")
     if args.client_id == '':
-        pass
+        print("Missing --client-id")
+        raise Exception("Missing --tenant-id")
     if args.client_secret == '':
-        pass
+        print("Missing --client-secret")
+        raise Exception("Missing --tenant-id")
 except Exception as e:
     parser.print_help(args.command)
     exit(0)
