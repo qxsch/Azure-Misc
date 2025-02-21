@@ -27,8 +27,9 @@ You will setup 2 service principals in Azure AD.
    # search for the site (in case you don't know the site id or url)
    ./manageSiteAccess.py site --search "<name-of-sharepoint-site>"
    # give permission to the site
-   ./manageSiteAccess.py create  --site "<url-OR-id-of-sharepoint-site>" --appid "<clientId-of-myapp-backend>" --app-display-name "myapp-backend" --permission "readwrite"
+   ./manageSiteAccess.py create  --site "<url-OR-id-of-sharepoint-site>" --app-id "<clientId-of-myapp-backend>" --app-display-name "myapp-backend" --permission "readwrite"
    ```
+1. Go to the sharepoint site "Documents" and create a "test" folder right in the root.
 
 
 

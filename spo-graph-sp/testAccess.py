@@ -380,7 +380,8 @@ if args.spo_use_default_credentials:
     spo = SpoGraphFileApi(
         SpoChainedTokenCredentialOauthProvider(DefaultAzureCredential()),
         args.spo_site,
-        args.spo_drivename
+        args.spo_drivename,
+        "test"
     )
 else:
     if args.spo_tenant_id == '' or args.spo_client_id == '' or args.spo_client_secret == '':
@@ -388,7 +389,8 @@ else:
     spo = SpoGraphFileApi(
         SpoClientSecretOauthProvider(args.spo_tenant_id, args.spo_client_id, args.spo_client_secret, False),
         args.spo_site,
-        args.spo_drivename
+        args.spo_drivename,
+        "test"
     )
 
 
