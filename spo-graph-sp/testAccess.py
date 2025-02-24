@@ -266,8 +266,12 @@ class SpoGraphFileApi:
         return self.getPathInfo(path) is not None
 
     def listPath(self, path: str = ""):
+        if os.path.dirname(self.getCombinedPath(path)) != '':
+            graphUrl = 'https://graph.microsoft.com/v1.0/drives/' + urllib.parse.quote_plus(self._driveId) + '/root:/' + urllib.parse.quote_plus(os.path.dirname(self.getCombinedPath(path))) + ':/children'
+        else:
+            graphUrl = 'https://graph.microsoft.com/v1.0/drives/' + urllib.parse.quote_plus(self._driveId) + '/root/children'
         response = requests.get(
-            'https://graph.microsoft.com/v1.0/drives/' + urllib.parse.quote_plus(self._driveId) + '/root:/' + urllib.parse.quote_plus(self.getCombinedPath(path)) + ':/children',
+            graphUrl,
             headers={
                 'Authorization': 'Bearer ' + str(self._token.getToken())
             }
@@ -292,8 +296,12 @@ class SpoGraphFileApi:
         return j
 
     def createFolder(self, path: str, ignoreIfFolderExists: bool = False):
+        if os.path.dirname(self.getCombinedPath(path)) != '':
+            graphUrl = 'https://graph.microsoft.com/v1.0/drives/' + urllib.parse.quote_plus(self._driveId) + '/root:/' + urllib.parse.quote_plus(os.path.dirname(self.getCombinedPath(path))) + ':/children'
+        else:
+            graphUrl = 'https://graph.microsoft.com/v1.0/drives/' + urllib.parse.quote_plus(self._driveId) + '/root/children'
         response = requests.post(
-            'https://graph.microsoft.com/v1.0/drives/' + urllib.parse.quote_plus(self._driveId) + '/root:/' + urllib.parse.quote_plus(os.path.dirname(self.getCombinedPath(path))) + ':/children',
+            graphUrl,
             headers={
                 'Authorization': 'Bearer ' + str(self._token.getToken()),
                 'Content-Type': 'application/json'
@@ -380,8 +388,7 @@ if args.spo_use_default_credentials:
     spo = SpoGraphFileApi(
         SpoChainedTokenCredentialOauthProvider(DefaultAzureCredential()),
         args.spo_site,
-        args.spo_drivename,
-        "test"
+        args.spo_drivename
     )
 else:
     if args.spo_tenant_id == '' or args.spo_client_id == '' or args.spo_client_secret == '':
@@ -389,8 +396,7 @@ else:
     spo = SpoGraphFileApi(
         SpoClientSecretOauthProvider(args.spo_tenant_id, args.spo_client_id, args.spo_client_secret, False),
         args.spo_site,
-        args.spo_drivename,
-        "test"
+        args.spo_drivename
     )
 
 
