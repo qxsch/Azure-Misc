@@ -9,7 +9,8 @@ parser = argparse.ArgumentParser(
     description="Test Access to Sharepoint Online."
 )
 parser.add_argument('--spo-site', type=str, required=True, help='The ID or URL of the Sharepoint Online site')
-parser.add_argument('--spo-drivename', type=str, required=False, help='The drive name of the Sharepoint Online site')
+parser.add_argument('--spo-drivename', type=str, default='Documents', help='The drive name of the Sharepoint Online site')
+parser.add_argument('--spo-subpath', type=str, default='', help='The sub path of the Sharepoint Online site')
 authParserGrp = parser.add_argument_group("Default Authentication")
 authParserGrp.add_argument('--spo-use-default-credentials', action='store_true', help='Use the default credentials to authenticate with Sharepoint Online')
 authParserGrp2 = parser.add_argument_group("Direct credentials-based authentication")
@@ -388,7 +389,8 @@ if args.spo_use_default_credentials:
     spo = SpoGraphFileApi(
         SpoChainedTokenCredentialOauthProvider(DefaultAzureCredential()),
         args.spo_site,
-        args.spo_drivename
+        args.spo_drivename,
+        args.spo_subpath
     )
 else:
     if args.spo_tenant_id == '' or args.spo_client_id == '' or args.spo_client_secret == '':
@@ -396,7 +398,8 @@ else:
     spo = SpoGraphFileApi(
         SpoClientSecretOauthProvider(args.spo_tenant_id, args.spo_client_id, args.spo_client_secret, False),
         args.spo_site,
-        args.spo_drivename
+        args.spo_drivename,
+        args.spo_subpath
     )
 
 

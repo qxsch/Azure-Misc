@@ -39,5 +39,7 @@ export SPO_TENANT_ID="<tenant-id>"
 export SPO_CLIENT_ID="<clientId-of-myapp-backend>"
 export SPO_CLIENT_SECRET="<clientSecret-of-myapp-backend>"
 ./testAccess.py --spo-site "<url-OR-id-of-sharepoint-site>" --spo-drivename "Documents"
+# as an alternative you can also use a subpath: f.e. "testdir" folder inside Documents (please create the "testdir" first)
+./testAccess.py --spo-site "<url-OR-id-of-sharepoint-site>" --spo-drivename "Documents" --spo-subpath "testdir"
 ``` 
 
