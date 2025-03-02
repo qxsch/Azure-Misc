@@ -267,7 +267,7 @@ class SpoGraphFileApi:
         return self.getPathInfo(path) is not None
 
     def listPath(self, path: str = ""):
-        if os.path.dirname(self.getCombinedPath(path)) != '':
+        if self.getCombinedPath(path) != '':
             graphUrl = 'https://graph.microsoft.com/v1.0/drives/' + urllib.parse.quote_plus(self._driveId) + '/root:/' + urllib.parse.quote_plus(self.getCombinedPath(path)) + ':/children'
         else:
             graphUrl = 'https://graph.microsoft.com/v1.0/drives/' + urllib.parse.quote_plus(self._driveId) + '/root/children'
