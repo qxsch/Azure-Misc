@@ -268,7 +268,7 @@ class SpoGraphFileApi:
 
     def listPath(self, path: str = ""):
         if os.path.dirname(self.getCombinedPath(path)) != '':
-            graphUrl = 'https://graph.microsoft.com/v1.0/drives/' + urllib.parse.quote_plus(self._driveId) + '/root:/' + urllib.parse.quote_plus(os.path.dirname(self.getCombinedPath(path))) + ':/children'
+            graphUrl = 'https://graph.microsoft.com/v1.0/drives/' + urllib.parse.quote_plus(self._driveId) + '/root:/' + urllib.parse.quote_plus(self.getCombinedPath(path)) + ':/children'
         else:
             graphUrl = 'https://graph.microsoft.com/v1.0/drives/' + urllib.parse.quote_plus(self._driveId) + '/root/children'
         response = requests.get(
@@ -278,9 +278,9 @@ class SpoGraphFileApi:
             }
         )
         if response.status_code == 404:
-            raise SpoGraphNotFoundException("Failed to list path items", response)
+            raise SpoGraphNotFoundException("Failed to list path items for " + self.getCombinedPath(path), response)
         elif response.status_code != 200:
-            raise SpoGraphGenericException("Failed to list path items", response)
+            raise SpoGraphGenericException("Failed to list path items for " + self.getCombinedPath(path), response)
         try:
             j = response.json()
             if 'value' in j:
