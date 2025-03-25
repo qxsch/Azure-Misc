@@ -6,6 +6,7 @@ Miscellaneous Azure stuff (includes demos for educational purposes only)
 * [Calling Azure Durable Functions from ADF](adf-calling-durable-functions)
 
 ## Azure Migrate
+* [Azure Migrate Error Reporting](azure-migrate-error-reporting)
 * [Azure Migrate Private Endpoint Deplyoment](azure-migrate-private-deployment) **Experimental**
 * [SetupAzureMigrateESLZ](SetupAzureMigrateESLZ) **Experimental**
 
