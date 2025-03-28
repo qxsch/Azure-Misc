@@ -77,6 +77,11 @@ while($null -ne $response -and $response.value -and $response.value.Length -gt 0
     # Check for discovery errors
     foreach ($machine in $response.value) {
         if ($machine.properties.errors) {
+            if($machine.properties.hostName -eq "") {
+                Write-Host -ForegroundColor Yellow "empty hostName for machine $($machine.name) (DC-Scope: $($machine.properties.dataCenterScope)) - skipping..."
+                continue
+            }
+            $errorIds = @()
             foreach ($e in $machine.properties.errors) {
                 if(-not $errorsByOsType.ContainsKey($machine.properties.operatingSystemDetails.osType)) {
                     $errorsByOsType[$machine.properties.operatingSystemDetails.osType] = @{}
@@ -87,16 +92,21 @@ while($null -ne $response -and $response.value -and $response.value.Length -gt 0
                 else {
                     $errorsByOsType[$machine.properties.operatingSystemDetails.osType][$e.id] = 1
                 }
-                $csvContent += [PSCustomObject]@{
-                    MachineName            = $machine.name
-                    MachineOsType          = $machine.properties.operatingSystemDetails.osType
-                    ErrorId                = $e.id
-                    ErrorCode              = $e.code
-                    ErrorMessage           = $e.message
-                    ErrorSeverity          = $e.severity
-                    ErrorSummaryMessage    = $e.summaryMessage
-                    ErrorPossibleCauses    = $e.possibleCauses
-                    ErrorRecommendedAction = $e.recommendedAction
+                if($errorIds -notcontains $e.id) {
+                    $errorIds += $e.id
+                    $csvContent += [PSCustomObject]@{
+                        ObjectName             = $machine.name
+                        DCSCope                = $machine.properties.dataCenterScope
+                        Hostname               = $machine.properties.hostName
+                        OsType                 = $machine.properties.operatingSystemDetails.osType
+                        ErrorId                = $e.id
+                        ErrorCode              = $e.code
+                        ErrorMessage           = $e.message
+                        ErrorSeverity          = $e.severity
+                        ErrorSummaryMessage    = $e.summaryMessage
+                        ErrorPossibleCauses    = $e.possibleCauses
+                        ErrorRecommendedAction = $e.recommendedAction
+                    }
                 }
             }
         }
