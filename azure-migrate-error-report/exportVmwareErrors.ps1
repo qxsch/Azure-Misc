@@ -96,8 +96,9 @@ while($null -ne $response -and $response.value -and $response.value.Length -gt 0
                     $errorIds += $e.id
                     $csvContent += [PSCustomObject]@{
                         ObjectName             = $machine.name
+                        VMName                 = $machine.properties.displayName
                         DCSCope                = $machine.properties.dataCenterScope
-                        Hostname               = $machine.properties.hostName
+                        ESXHostname            = $machine.properties.hostName
                         OsType                 = $machine.properties.operatingSystemDetails.osType
                         ErrorId                = $e.id
                         ErrorCode              = $e.code
