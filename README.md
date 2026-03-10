@@ -2,7 +2,7 @@
 Miscellaneous Azure stuff (includes demos for educational purposes only)
 
 ## General
-* [Mermaid Diagram Generation for PowerPoint](mermaid-ppt-svg) (generates SVGs that can be used in PowerPoint as editable shapes, with auto-scaled font size)
+* [Mermaid Diagram Generation for PowerPoint](mermaid-to-ppt) (generates SVGs that can be used in PowerPoint as editable shapes, with auto-scaled font size)
 
 ## Azure Data Factory
 * [Calling Azure Functions (python) from ADF](adf-azfunc)
