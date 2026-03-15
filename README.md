@@ -3,6 +3,7 @@ Miscellaneous Azure stuff (includes demos for educational purposes only)
 
 ## General
 * [Mermaid Diagram Generation for PowerPoint](mermaid-to-ppt) (generates SVGs that can be used in PowerPoint as editable shapes, with auto-scaled font size)
+* [Markdown with Mermaid to Outlook](markdown-to-outlook) (generates HTML with embedded diagrams that can be copied and pasted into Outlook, with an option for high-resolution PNGs for better compatibility)
 
 ## Azure Data Factory
 * [Calling Azure Functions (python) from ADF](adf-azfunc)
