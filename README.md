@@ -1,5 +1,5 @@
 # Azure-Misc
-Miscellaneous Azure stuff (includes demos for educational purposes only)
+Miscellaneous Azure stuff (includes demos for educational purposes only, no liability, no support)
 
 ## General
 * [Mermaid Diagram Generation for PowerPoint](mermaid-to-ppt) (generates SVGs that can be used in PowerPoint as editable shapes, with auto-scaled font size)
