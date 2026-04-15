@@ -1,12 +1,10 @@
 # The requirements and traditional approach
 
 ```pwsh
-# install mermaid-cli and generate diagram
-npm install -g @mermaid-js/mermaid-cli
-```
-
-```pwsh
-mmdc -i diagram.mmd -o output.svg
+# optional: create a virtual environment
+# python -m venv .venv
+pip install -r requirements.txt
+playwright install
 ```
 
 ## Best approach for outlook

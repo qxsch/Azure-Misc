@@ -2,9 +2,14 @@
 """
 build_html.py
 Converts final-architecture.md → final-architecture.html
-  - Mermaid code blocks are rendered to inline SVG (default) or PNG (--use-png) via npx mmdc
+  - Mermaid code blocks are rendered to inline SVG (default) or PNG (--use-png)
+    via Playwright + headless Chromium (no Node.js required)
   - Markdown is converted to HTML via the `markdown` library
   - Output is a single self-contained HTML5 + CSS3 file
+
+Setup:
+    pip install -r requirements.txt
+    playwright install chromium
 
 Usage:
     python build_html.py
@@ -15,15 +20,14 @@ Usage:
 import argparse
 import base64
 import re
-import subprocess
 import sys
-import tempfile
 import textwrap
 from pathlib import Path
 
 import markdown
 from markdown.extensions.tables import TableExtension
 from markdown.extensions.fenced_code import FencedCodeExtension
+from playwright.sync_api import sync_playwright
 
 # ---------------------------------------------------------------------------
 # Configuration defaults
@@ -32,7 +36,9 @@ DEFAULT_INPUT  = Path(__file__).parent / "output.md"
 DEFAULT_OUTPUT = Path(__file__).parent / "output.html"
 
 MERMAID_THEME = "default"   # default | neutral | dark | forest
-MERMAID_BG    = "white"     # background colour passed to mmdc
+MERMAID_BG    = "white"     # background colour for diagrams
+MERMAID_CDN   = "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"
+MERMAID_SCALE = 3           # device-scale-factor for high-res PNG export
 
 # ---------------------------------------------------------------------------
 # CSS
@@ -320,52 +326,77 @@ def extract_mermaid_blocks(md_text: str):
     return cleaned, blocks
 
 
-def _run_mmdc(in_file: Path, out_file: Path, theme: str, bg: str) -> subprocess.CompletedProcess:
-    """Shared mmdc invocation."""
-    cmd = [
-        "npx", "--yes", "mmdc",
-        "-i", str(in_file),
-        "-o", str(out_file),
-        "--theme", theme,
-        "--backgroundColor", bg,
-        "--width", "1600",
-        "--scale", "3",
-        "--quiet",
-    ]
-    return subprocess.run(cmd, capture_output=True, text=True, shell=(sys.platform == "win32"))
+class MermaidRenderer:
+    """Renders Mermaid diagrams via Playwright + headless Chromium (no Node.js)."""
 
+    def __init__(self, theme: str = "default", bg: str = "white", scale: int = 3):
+        self.theme = theme
+        self.bg = bg
+        self.scale = scale
+        self._pw = None
+        self._browser = None
+        self._page = None
 
-def render_mermaid_to_svg(mermaid_src: str, theme: str, bg: str) -> str:
-    """Renders a mermaid diagram string to an SVG string via npx mmdc."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        tmp = Path(tmpdir)
-        in_file  = tmp / "diagram.mmd"
-        out_file = tmp / "diagram.svg"
-        in_file.write_text(mermaid_src, encoding="utf-8")
+    def __enter__(self):
+        self._pw = sync_playwright().start()
+        self._browser = self._pw.chromium.launch()
+        ctx = self._browser.new_context(
+            viewport={"width": 1600, "height": 900},
+            device_scale_factor=self.scale,
+        )
+        self._page = ctx.new_page()
+        self._page.set_content(
+            f'<!DOCTYPE html><html><head>'
+            f'<script src="{MERMAID_CDN}"></script>'
+            f'</head><body style="background:{self.bg};margin:0">'
+            f'<div id="container"></div>'
+            f'<script>mermaid.initialize({{startOnLoad:false,theme:"{self.theme}"}});</script>'
+            f'</body></html>',
+            wait_until="networkidle",
+        )
+        self._page.wait_for_function(
+            "typeof mermaid !== 'undefined' && typeof mermaid.render === 'function'"
+        )
+        return self
 
-        result = _run_mmdc(in_file, out_file, theme, bg)
-        if result.returncode != 0:
-            print(f"  [WARN] mmdc error:\n{result.stderr.strip()}", file=sys.stderr)
-            return f'<pre style="color:red">Mermaid render failed:\n{result.stderr}</pre>'
+    def __exit__(self, *exc):
+        if self._browser:
+            self._browser.close()
+        if self._pw:
+            self._pw.stop()
 
-        return out_file.read_text(encoding="utf-8")
+    def render_svg(self, mermaid_src: str) -> str:
+        """Return an SVG string for the given Mermaid source."""
+        try:
+            svg = self._page.evaluate(
+                """async (src) => {
+                    const id = 'dia_' + Math.random().toString(36).slice(2);
+                    const { svg } = await mermaid.render(id, src);
+                    return svg;
+                }""",
+                mermaid_src,
+            )
+            return svg
+        except Exception as e:
+            print(f"  [WARN] Mermaid render error: {e}", file=sys.stderr)
+            return f'<pre style="color:red">Mermaid render failed:\n{e}</pre>'
 
-
-def render_mermaid_to_png_b64(mermaid_src: str, theme: str, bg: str) -> str:
-    """Renders a mermaid diagram string to a base64-encoded PNG via npx mmdc."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        tmp = Path(tmpdir)
-        in_file  = tmp / "diagram.mmd"
-        out_file = tmp / "diagram.png"
-        in_file.write_text(mermaid_src, encoding="utf-8")
-
-        result = _run_mmdc(in_file, out_file, theme, bg)
-        if result.returncode != 0:
-            print(f"  [WARN] mmdc error:\n{result.stderr.strip()}", file=sys.stderr)
+    def render_png_b64(self, mermaid_src: str) -> str:
+        """Return a base64-encoded high-res PNG for the given Mermaid source."""
+        svg = self.render_svg(mermaid_src)
+        if svg.startswith("<pre"):
             return ""
-
-        raw = out_file.read_bytes()
-        return base64.b64encode(raw).decode("ascii")
+        try:
+            self._page.evaluate(
+                "(svg) => { document.getElementById('container').innerHTML = svg; }",
+                svg,
+            )
+            el = self._page.query_selector("#container svg")
+            png_bytes = el.screenshot(type="png")
+            return base64.b64encode(png_bytes).decode("ascii")
+        except Exception as e:
+            print(f"  [WARN] PNG screenshot error: {e}", file=sys.stderr)
+            return ""
 
 
 def svg_to_inline(svg_text: str, label: str = "") -> str:
@@ -485,15 +516,18 @@ def build(input_path: Path, output_path: Path, use_png: bool = False):
         "Rollout & Migration Strategy",
         "Diagram 4", "Diagram 5",  # fallbacks
     ]
-    for i, src in enumerate(mermaid_blocks):
-        label = diagram_labels[i] if i < len(diagram_labels) else f"Diagram {i+1}"
-        print(f"  Rendering diagram {i+1}/{len(mermaid_blocks)}: {label} ({mode})…")
-        if use_png:
-            b64 = render_mermaid_to_png_b64(src, MERMAID_THEME, MERMAID_BG)
-            svg_replacements[f"<!-- MERMAID_BLOCK_{i} -->"] = png_to_inline(b64, label)
-        else:
-            svg_text = render_mermaid_to_svg(src, MERMAID_THEME, MERMAID_BG)
-            svg_replacements[f"<!-- MERMAID_BLOCK_{i} -->"] = svg_to_inline(svg_text, label)
+    if mermaid_blocks:
+        print("  Launching headless Chromium…")
+        with MermaidRenderer(theme=MERMAID_THEME, bg=MERMAID_BG, scale=MERMAID_SCALE) as renderer:
+            for i, src in enumerate(mermaid_blocks):
+                label = diagram_labels[i] if i < len(diagram_labels) else f"Diagram {i+1}"
+                print(f"  Rendering diagram {i+1}/{len(mermaid_blocks)}: {label} ({mode})…")
+                if use_png:
+                    b64 = renderer.render_png_b64(src)
+                    svg_replacements[f"<!-- MERMAID_BLOCK_{i} -->"] = png_to_inline(b64, label)
+                else:
+                    svg_text = renderer.render_svg(src)
+                    svg_replacements[f"<!-- MERMAID_BLOCK_{i} -->"] = svg_to_inline(svg_text, label)
 
     # ── 3. Convert markdown to HTML ────────────────────────────────────────
     print("Converting markdown → HTML…")
