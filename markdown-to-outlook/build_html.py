@@ -252,12 +252,36 @@ td strong { color: var(--brand-dark); }
   padding: 1.5rem;
   margin: 1.5rem 0;
   box-shadow: var(--shadow);
-  overflow-x: auto;
+  overflow: hidden;
   text-align: center;
+  position: relative;
 }
+.diagram-wrap.svg-interactive {
+  cursor: grab;
+  user-select: none;
+}
+.diagram-wrap.svg-interactive.dragging {
+  cursor: grabbing;
+}
+.diagram-wrap.svg-interactive .zoom-hint {
+  position: absolute;
+  top: .5rem;
+  right: .5rem;
+  font-size: .7rem;
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: .15rem .45rem;
+  opacity: .7;
+  pointer-events: none;
+  transition: opacity .2s;
+}
+.diagram-wrap.svg-interactive:hover .zoom-hint { opacity: 1; }
 .diagram-wrap svg {
   max-width: 100%;
   height: auto;
+  transform-origin: 0 0;
 }
 .diagram-label {
   font-size: .78rem;
@@ -301,6 +325,81 @@ blockquote:has(strong) {
   body { background: #fff; font-size: 11pt; }
   .diagram-wrap { page-break-inside: avoid; }
 }
+"""
+
+# ---------------------------------------------------------------------------
+# Zoom & Pan JS (SVG mode only)
+# ---------------------------------------------------------------------------
+ZOOM_PAN_JS = """
+<script>
+(function() {
+  var MIN_SCALE = 0.25, MAX_SCALE = 10, ZOOM_SPEED = 0.002;
+
+  document.querySelectorAll('.diagram-wrap').forEach(function(wrap) {
+    var svg = wrap.querySelector('svg');
+    if (!svg) return;
+
+    wrap.classList.add('svg-interactive');
+
+    // add zoom hint badge
+    var hint = document.createElement('span');
+    hint.className = 'zoom-hint';
+    hint.textContent = 'Scroll to zoom · Drag to pan · Double-click to reset';
+    wrap.appendChild(hint);
+
+    var scale = 1, tx = 0, ty = 0;
+    var dragging = false, startX = 0, startY = 0, startTx = 0, startTy = 0;
+
+    function apply() {
+      svg.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + scale + ')';
+    }
+
+    // Wheel zoom — zoom towards cursor position
+    wrap.addEventListener('wheel', function(e) {
+      e.preventDefault();
+      var rect = wrap.getBoundingClientRect();
+      var mx = e.clientX - rect.left;
+      var my = e.clientY - rect.top;
+
+      var delta = -e.deltaY * ZOOM_SPEED;
+      var newScale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale * (1 + delta)));
+      var factor = newScale / scale;
+
+      tx = mx - factor * (mx - tx);
+      ty = my - factor * (my - ty);
+      scale = newScale;
+      apply();
+    }, { passive: false });
+
+    // Drag pan
+    wrap.addEventListener('mousedown', function(e) {
+      if (e.button !== 0) return;
+      dragging = true;
+      startX = e.clientX; startY = e.clientY;
+      startTx = tx; startTy = ty;
+      wrap.classList.add('dragging');
+      e.preventDefault();
+    });
+    window.addEventListener('mousemove', function(e) {
+      if (!dragging) return;
+      tx = startTx + (e.clientX - startX);
+      ty = startTy + (e.clientY - startY);
+      apply();
+    });
+    window.addEventListener('mouseup', function() {
+      if (!dragging) return;
+      dragging = false;
+      wrap.classList.remove('dragging');
+    });
+
+    // Double-click reset
+    wrap.addEventListener('dblclick', function() {
+      scale = 1; tx = 0; ty = 0;
+      apply();
+    });
+  });
+})();
+</script>
 """
 
 # ---------------------------------------------------------------------------
@@ -367,6 +466,7 @@ class MermaidRenderer:
 
     def render_svg(self, mermaid_src: str) -> str:
         """Return an SVG string for the given Mermaid source."""
+        assert self._page is not None, "Call render_svg inside a 'with' block"
         try:
             svg = self._page.evaluate(
                 """async (src) => {
@@ -383,6 +483,7 @@ class MermaidRenderer:
 
     def render_png_b64(self, mermaid_src: str) -> str:
         """Return a base64-encoded high-res PNG for the given Mermaid source."""
+        assert self._page is not None, "Call render_png_b64 inside a 'with' block"
         svg = self.render_svg(mermaid_src)
         if svg.startswith("<pre"):
             return ""
@@ -392,6 +493,7 @@ class MermaidRenderer:
                 svg,
             )
             el = self._page.query_selector("#container svg")
+            assert el is not None, "SVG element not found after injection"
             png_bytes = el.screenshot(type="png")
             return base64.b64encode(png_bytes).decode("ascii")
         except Exception as e:
@@ -550,6 +652,10 @@ def build(input_path: Path, output_path: Path, use_png: bool = False):
     title = re.sub(r"<[^>]+>", "", title_match.group(1)).strip() if title_match else "Architecture"
 
     # ── 8. Assemble final HTML ─────────────────────────────────────────────
+    zoom_js = ""
+    if not use_png:
+        zoom_js = ZOOM_PAN_JS
+
     html = textwrap.dedent(f"""\
     <!DOCTYPE html>
     <html lang="en">
@@ -567,7 +673,7 @@ def build(input_path: Path, output_path: Path, use_png: bool = False):
         <main class="content">
     {body_html}
         </main>
-      </div>
+      </div>{zoom_js}
     </body>
     </html>
     """)
