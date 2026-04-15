@@ -550,15 +550,20 @@ def build_toc(html: str) -> tuple[str, str]:
         inner = m.group(3)
         # strip any inline HTML for the slug
         text  = re.sub(r"<[^>]+>", "", inner).strip()
-        slug  = re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
-        # deduplicate
-        if slug in used_ids:
-            used_ids[slug] += 1
-            slug = f"{slug}-{used_ids[slug]}"
-        else:
-            used_ids[slug] = 0
 
-        if "id=" not in attrs:
+        # If the heading already has an id (e.g. from the markdown toc extension),
+        # use that id for the TOC link instead of generating a new slug.
+        existing = re.search(r'id="([^"]+)"', attrs)
+        if existing:
+            slug = existing.group(1)
+        else:
+            slug = re.sub(r"[^a-z0-9]+", "_", text.lower()).strip("_")
+            # deduplicate
+            if slug in used_ids:
+                used_ids[slug] += 1
+                slug = f"{slug}_{used_ids[slug]}"
+            else:
+                used_ids[slug] = 0
             attrs = f' id="{slug}"' + attrs
 
         toc_class = "toc-h2" if tag == "h2" else "toc-h3"
