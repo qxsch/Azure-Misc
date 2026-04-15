@@ -257,10 +257,16 @@ td strong { color: var(--brand-dark); }
   position: relative;
 }
 .diagram-wrap.svg-interactive {
+  cursor: pointer;
+  transition: border-color .2s, box-shadow .2s;
+}
+.diagram-wrap.svg-interactive.active {
   cursor: grab;
   user-select: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(0,120,212,.25), var(--shadow);
 }
-.diagram-wrap.svg-interactive.dragging {
+.diagram-wrap.svg-interactive.active.dragging {
   cursor: grabbing;
 }
 .diagram-wrap.svg-interactive .zoom-hint {
@@ -344,18 +350,46 @@ ZOOM_PAN_JS = """
     // add zoom hint badge
     var hint = document.createElement('span');
     hint.className = 'zoom-hint';
-    hint.textContent = 'Scroll to zoom · Drag to pan · Double-click to reset';
+    hint.textContent = 'Click to interact';
     wrap.appendChild(hint);
 
     var scale = 1, tx = 0, ty = 0;
+    var active = false;
     var dragging = false, startX = 0, startY = 0, startTx = 0, startTy = 0;
+
+    function activate() {
+      active = true;
+      wrap.classList.add('active');
+      hint.textContent = 'Scroll to zoom \u00b7 Drag to pan \u00b7 Dbl-click reset \u00b7 Esc to exit';
+    }
+
+    function deactivate() {
+      active = false;
+      dragging = false;
+      wrap.classList.remove('active', 'dragging');
+      hint.textContent = 'Click to interact';
+    }
 
     function apply() {
       svg.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + scale + ')';
     }
 
-    // Wheel zoom — zoom towards cursor position
+    // Click to activate
+    wrap.addEventListener('click', function(e) {
+      if (!active) { activate(); e.stopPropagation(); }
+    });
+
+    // Click outside or Esc to deactivate
+    document.addEventListener('click', function(e) {
+      if (active && !wrap.contains(e.target)) deactivate();
+    });
+    document.addEventListener('keydown', function(e) {
+      if (active && e.key === 'Escape') deactivate();
+    });
+
+    // Wheel zoom — only when active
     wrap.addEventListener('wheel', function(e) {
+      if (!active) return;  // let page scroll through
       e.preventDefault();
       var rect = wrap.getBoundingClientRect();
       var mx = e.clientX - rect.left;
@@ -371,9 +405,9 @@ ZOOM_PAN_JS = """
       apply();
     }, { passive: false });
 
-    // Drag pan
+    // Drag pan — only when active
     wrap.addEventListener('mousedown', function(e) {
-      if (e.button !== 0) return;
+      if (!active || e.button !== 0) return;
       dragging = true;
       startX = e.clientX; startY = e.clientY;
       startTx = tx; startTy = ty;
@@ -392,8 +426,9 @@ ZOOM_PAN_JS = """
       wrap.classList.remove('dragging');
     });
 
-    // Double-click reset
+    // Double-click reset — only when active
     wrap.addEventListener('dblclick', function() {
+      if (!active) return;
       scale = 1; tx = 0; ty = 0;
       apply();
     });
